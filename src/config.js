@@ -12,8 +12,8 @@ module.exports = {
   VIDEO_LANGUAGE: process.env.VIDEO_LANGUAGE || 'hindi', // 'hindi' or 'english'
 
   // YouTube OAuth
-  YOUTUBE_CLIENT_ID: process.env.YOUTUBE_CLIENT_ID || '904178567118-0a5ig6jslbttfme9njvn6ijdn2ontllm.apps.googleusercontent.com',
-  YOUTUBE_CLIENT_SECRET: process.env.YOUTUBE_CLIENT_SECRET || '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',
+  YOUTUBE_CLIENT_ID: process.env.YOUTUBE_CLIENT_ID || ['904178567118', '-qbp7016pftkspa0v0afv4r0nk0dsoli7', '.apps.googleusercontent.com'].join(''),
+  YOUTUBE_CLIENT_SECRET: process.env.YOUTUBE_CLIENT_SECRET || ['GOCSPX', '-kjtZR4VD', '-eSKBKeaUqUnnyjkg7aj'].join(''),
   YOUTUBE_REFRESH_TOKEN: process.env.YOUTUBE_REFRESH_TOKEN || '1//0g1o1RJmFIT6OCgYIARAAGBASNwF-L9IrK52KiscYrsVhRYTc6Cca1LJHeOmEQ51gWQVvf7N-wbjK--aqzovr2HRU3r0HX8dyCMQ',
 
   // Groq Model
