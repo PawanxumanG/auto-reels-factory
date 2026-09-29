@@ -311,10 +311,14 @@ app.post('/api/delete-video', async (req, res) => {
   }
 });
 
-const PORT = 3500;
-app.listen(PORT, async () => {
-  console.log(`============================================================`);
-  console.log(`🖥️  AUTO SHORTS ADMIN STUDIO RUNNING AT: http://localhost:${PORT}`);
-  console.log(`============================================================`);
-  await syncScheduler();
-});
+const PORT = process.env.PORT || 3500;
+if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
+  app.listen(PORT, async () => {
+    console.log(`============================================================`);
+    console.log(`🖥️  AUTO SHORTS ADMIN STUDIO RUNNING AT: http://localhost:${PORT}`);
+    console.log(`============================================================`);
+    await syncScheduler();
+  });
+}
+
+module.exports = app;
