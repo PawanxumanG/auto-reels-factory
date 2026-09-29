@@ -247,8 +247,26 @@ app.post('/api/auth/google-callback', async (req, res) => {
       success: true,
       channel: tokenData.channelInfo,
     });
+// 2b. Direct Refresh Token Linking
+app.post('/api/auth/save-token', async (req, res) => {
+  const { refreshToken, uid } = req.body;
+  if (!refreshToken || !uid) return res.status(400).json({ error: 'Missing refreshToken or uid' });
+
+  try {
+    const channelInfo = await getChannelInfo(refreshToken.trim());
+    await saveUserYouTubeAuth(uid, {
+      refreshToken: refreshToken.trim(),
+      channel: channelInfo,
+    });
+    await saveUserProfile(uid, {
+      channel: channelInfo,
+    });
+
+    res.json({
+      success: true,
+      channel: channelInfo,
+    });
   } catch (err) {
-    console.error('[OAuth Callback Error]:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
