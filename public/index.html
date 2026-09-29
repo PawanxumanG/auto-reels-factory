@@ -157,7 +157,7 @@
       </h1>
 
       <p class="text-base sm:text-lg md:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-        Sign in, link your YouTube channel in 1-click, and let our AI create high-retention viral videos, natural voiceovers, dynamic animated subtitles, and auto-post daily on your schedule.
+        Sign in, link your YouTube channel with your name or link, and let our AI create high-retention viral videos, natural voiceovers, dynamic animated subtitles, and auto-post daily on schedule.
       </p>
 
       <div class="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -174,7 +174,7 @@
       <div class="flex flex-wrap items-center justify-center gap-6 text-xs text-gray-500 pt-3">
         <span><i class="fa-solid fa-check text-emerald-400 mr-1.5"></i>100% Free / ₹0 Cost Stack</span>
         <span><i class="fa-solid fa-check text-emerald-400 mr-1.5"></i>No Credit Card Required</span>
-        <span><i class="fa-solid fa-check text-emerald-400 mr-1.5"></i>1-Click YouTube OAuth Connect</span>
+        <span><i class="fa-solid fa-check text-emerald-400 mr-1.5"></i>Link by Channel Name or URL</span>
         <span><i class="fa-solid fa-check text-emerald-400 mr-1.5"></i>Zero Hosting Fees</span>
       </div>
     </section>
@@ -195,7 +195,7 @@
           </div>
           <h3 class="font-bold text-white text-lg">Sign In & Link Channel</h3>
           <p class="text-sm text-gray-400 leading-relaxed">
-            Click Sign In with Google, connect your YouTube channel, and your personal isolated studio dashboard will appear instantly.
+            Click Sign In, enter your YouTube channel name or link, and your personal studio dashboard will appear instantly.
           </p>
         </div>
 
@@ -217,7 +217,7 @@
           </div>
           <h3 class="font-bold text-white text-lg">Sit Back & Watch Views Grow</h3>
           <p class="text-sm text-gray-400 leading-relaxed">
-            The cloud engine writes scripts, synthesizes voiceovers, renders 1080x1920 HD videos, and publishes directly to YouTube without you having to touch anything.
+            The cloud engine writes scripts, synthesizes voiceovers, renders 1080x1920 HD videos, and publishes directly to YouTube on autopilot.
           </p>
         </div>
       </div>
@@ -312,7 +312,7 @@
   <!-- ==================================================================== -->
   <main id="appDashboard" class="hidden flex-1 p-6 max-w-7xl mx-auto w-full space-y-7">
     
-    <!-- User Welcome & Channel Connection Status Banner -->
+    <!-- User Welcome & Clean Channel Status Banner -->
     <div id="channelStatusCard" class="p-5 rounded-2xl bg-gradient-to-r from-pink-950/40 via-purple-950/30 to-dark-800 border border-pink-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
       <div class="flex items-center space-x-4">
         <div id="channelBadgeIcon" class="w-12 h-12 rounded-2xl bg-red-600/20 text-red-400 flex items-center justify-center text-2xl border border-red-500/30 shadow-inner overflow-hidden">
@@ -320,21 +320,22 @@
           <img id="channelAvatarElem" class="w-full h-full object-cover hidden" alt="Channel">
         </div>
         <div>
-          <div class="flex items-center space-x-2">
+          <div class="flex flex-wrap items-center gap-2">
             <h4 id="userGreetingText" class="font-bold text-white text-base">Welcome to Your Studio</h4>
-            <span id="channelStatusBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center space-x-1">
+            <a id="channelLinkAnchor" href="https://youtube.com" target="_blank" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 flex items-center space-x-1.5 transition-colors">
               <i class="fa-solid fa-circle-check text-[10px]"></i>
-              <span id="badgeChannelTitle">Channel Connected</span>
-            </span>
+              <span id="badgeChannelTitle">Connected: @Channel</span>
+              <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-70"></i>
+            </a>
           </div>
           <p id="channelSubText" class="text-xs text-gray-400 mt-0.5">24/7 Autonomous upload pipeline is active and publishing on schedule.</p>
         </div>
       </div>
       
       <div class="flex items-center space-x-3">
-        <button onclick="openChannelConnectModal()" id="btnConnectChannel" class="px-4 py-2 rounded-xl bg-dark-700 hover:bg-dark-600 border border-gray-700 text-gray-200 font-semibold text-xs transition-all flex items-center space-x-1.5">
-          <i class="fa-solid fa-arrows-rotate text-xs text-pink-400"></i>
-          <span id="btnConnectText">Channel Settings</span>
+        <button onclick="openChannelConnectModal()" class="px-4 py-2 rounded-xl bg-dark-700 hover:bg-dark-600 border border-gray-700 text-gray-200 font-semibold text-xs transition-all flex items-center space-x-1.5">
+          <i class="fa-solid fa-pen text-xs text-pink-400"></i>
+          <span>Manage Channel</span>
         </button>
       </div>
     </div>
@@ -423,7 +424,7 @@
 
         <div>
           <label class="block text-xs font-semibold text-gray-300 mb-1.5">Custom Topic / Prompt (Optional)</label>
-          <input type="text" id="customTopicInput" placeholder="e.g., 3 dark psychological facts about human touch" class="w-full bg-dark-800 border border-gray-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-pink-500 transition-colors">
+          <input type="text" id="customTopicInput" placeholder="Enter topic prompt (optional)" class="w-full bg-dark-800 border border-gray-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-pink-500 transition-colors">
           <p class="text-[11px] text-gray-500 mt-1">Leave empty for Groq AI trending auto-generation.</p>
         </div>
 
@@ -500,13 +501,13 @@
 
       <div class="space-y-4">
         <div>
-          <label class="block text-xs font-semibold text-gray-300 mb-1">Your Name or Channel Handle</label>
-          <input type="text" id="inputAuthName" placeholder="e.g., @Shinzo-Army" class="w-full bg-dark-800 border border-gray-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500">
+          <label class="block text-xs font-semibold text-gray-300 mb-1">Your Name, Handle, or Channel Link</label>
+          <input type="text" id="inputAuthName" placeholder="Enter your name, @handle, or channel link" class="w-full bg-dark-800 border border-gray-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500">
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-gray-300 mb-1">Email Address</label>
-          <input type="email" id="inputAuthEmail" placeholder="e.g., ffpawangamer@gmail.com" class="w-full bg-dark-800 border border-gray-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500">
+          <label class="block text-xs font-semibold text-gray-300 mb-1">Email Address (Optional)</label>
+          <input type="email" id="inputAuthEmail" placeholder="Enter email address (optional)" class="w-full bg-dark-800 border border-gray-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500">
         </div>
 
         <button onclick="performUserSignIn()" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:from-pink-600 hover:to-indigo-700 text-white font-bold text-sm shadow-lg shadow-pink-500/25 transition-all flex items-center justify-center space-x-2 active:scale-95">
@@ -546,33 +547,33 @@
           <i class="fa-brands fa-youtube"></i>
         </div>
         <div>
-          <h3 class="text-lg font-bold text-white">YouTube Channel Link</h3>
-          <p class="text-xs text-gray-400">Manage your connected publishing channel</p>
+          <h3 class="text-lg font-bold text-white">Connect YouTube Channel</h3>
+          <p class="text-xs text-gray-400">Link your channel by name or link for automated Shorts</p>
         </div>
       </div>
 
       <div class="space-y-4 text-xs">
-        <div class="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center space-x-3">
-          <i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
-          <div>
-            <p class="font-bold text-white text-sm" id="modalChannelName">YouTube Channel Active</p>
-            <p class="text-gray-400 text-[11px]">Authorized for direct Shorts & Reels video uploads.</p>
-          </div>
+        <div>
+          <label class="block font-semibold text-gray-300 mb-1">Your YouTube Channel Name or Link</label>
+          <input type="text" id="inputChannelHandle" placeholder="Paste channel link or enter @handle" class="w-full bg-dark-800 border border-gray-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-red-500">
         </div>
 
         <div>
-          <label class="block font-semibold text-gray-300 mb-1">Your Custom Channel Handle / Title</label>
-          <input type="text" id="inputChannelHandle" placeholder="e.g. @Shinzo-Army" class="w-full bg-dark-800 border border-gray-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-red-500">
-        </div>
-
-        <div>
-          <label class="block font-semibold text-gray-300 mb-1">Primary Niche</label>
+          <label class="block font-semibold text-gray-300 mb-1">Primary Niche / Category</label>
           <select id="inputChannelNiche" class="w-full bg-dark-800 border border-gray-700 rounded-xl p-2.5 text-white">
             <option value="psychology">🧠 Human Psychology & Dark Secrets</option>
-            <option value="facts">🌌 Terrifying Facts & Space Mysteries</option>
+            <option value="facts">🌌 Deep Space Mysteries & Terrifying Facts</option>
             <option value="cricket">🏏 Shocking Cricket Records & Legends</option>
             <option value="motivation">🦁 Stoic Motivation & The 1% Rule</option>
           </select>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center space-x-3">
+          <i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+          <div>
+            <p class="font-bold text-white text-xs">Auto-Uploads Ready</p>
+            <p class="text-gray-400 text-[11px]">All generated 1080x1920 HD Shorts will be formatted with high CTR hooks and SEO tags.</p>
+          </div>
         </div>
       </div>
 
@@ -580,7 +581,7 @@
         <button onclick="closeChannelConnectModal()" class="px-4 py-2 rounded-xl bg-dark-700 hover:bg-dark-600 text-gray-300 text-xs font-semibold">Cancel</button>
         <button onclick="saveConnectedChannel()" class="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-lg shadow-red-600/25 flex items-center space-x-1.5">
           <i class="fa-brands fa-youtube"></i>
-          <span>Save Channel Profile</span>
+          <span>Save & Connect Channel</span>
         </button>
       </div>
     </div>
@@ -750,8 +751,36 @@
     let currentSettings = {};
     let isShowingLanding = true;
 
-    function getUidQuery() {
-      return '';
+    // Smart Channel Name / URL Parser
+    function parseChannelInput(input) {
+      if (!input) return { handle: '@Creator', name: 'Creator', url: 'https://youtube.com' };
+      let str = input.trim();
+      let handle = '';
+      let name = str;
+
+      if (str.includes('youtube.com/')) {
+        const handleMatch = str.match(/@([a-zA-Z0-9_\-]+)/);
+        if (handleMatch) {
+          handle = '@' + handleMatch[1];
+          name = handleMatch[1];
+        } else {
+          const parts = str.split('youtube.com/')[1].split('/')[0].split('?')[0];
+          handle = '@' + parts.replace(/^c\//, '').replace(/^user\//, '').replace(/^channel\//, '');
+          name = handle.slice(1);
+        }
+      } else if (str.startsWith('@')) {
+        handle = str;
+        name = str.slice(1);
+      } else {
+        handle = '@' + str.replace(/\s+/g, '');
+        name = str;
+      }
+
+      return {
+        handle,
+        name,
+        url: `https://youtube.com/${handle}`
+      };
     }
 
     // Modal Triggers
@@ -775,15 +804,17 @@
 
     // Auth Operations
     function performUserSignIn() {
-      const name = document.getElementById('inputAuthName').value.trim() || 'Creator';
-      const email = document.getElementById('inputAuthEmail').value.trim() || (name.toLowerCase().replace(/\s+/g, '') + '@gmail.com');
+      const rawName = document.getElementById('inputAuthName').value.trim() || 'Creator';
+      const email = document.getElementById('inputAuthEmail').value.trim() || (rawName.toLowerCase().replace(/[^a-zA-Z0-9]/g, '') + '@gmail.com');
+      
+      const parsedChannel = parseChannelInput(rawName);
 
       currentUser = {
         uid: 'user_' + btoa(email).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12),
-        displayName: name,
+        displayName: parsedChannel.handle,
         email: email,
-        avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`,
-        channel: { handle: name.startsWith('@') ? name : `@${name}`, niche: 'psychology' }
+        avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(parsedChannel.name)}`,
+        channel: parsedChannel
       };
 
       localStorage.setItem('youshorts_user', JSON.stringify(currentUser));
@@ -793,12 +824,13 @@
     }
 
     function enterDemoMode() {
+      const demoChannel = { handle: '@DailyFacts', name: 'Daily Facts', url: 'https://youtube.com/@DailyFacts' };
       currentUser = {
         uid: 'admin',
-        displayName: 'Creator Master',
-        email: 'admin@youshorts.ai',
+        displayName: '@DailyFacts',
+        email: 'creator@youshorts.ai',
         avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=creator',
-        channel: { handle: '@DailyFacts', niche: 'psychology' }
+        channel: demoChannel
       };
       localStorage.setItem('youshorts_user', JSON.stringify(currentUser));
       closeSignInModal();
@@ -848,44 +880,36 @@
 
     // Save Connected Channel
     async function saveConnectedChannel() {
-      const handle = document.getElementById('inputChannelHandle').value.trim();
+      const rawInput = document.getElementById('inputChannelHandle').value.trim();
       const niche = document.getElementById('inputChannelNiche').value;
 
-      if (!handle) {
-        alert('Please enter your YouTube Channel Handle or Name!');
+      if (!rawInput) {
+        alert('Please enter your YouTube Channel Name or Link!');
         return;
       }
 
       if (!currentUser) return;
-      currentUser.channel = { handle, niche, linkedAt: new Date().toISOString() };
+      const parsed = parseChannelInput(rawInput);
+      currentUser.displayName = parsed.handle;
+      currentUser.channel = { ...parsed, niche, linkedAt: new Date().toISOString() };
       localStorage.setItem('youshorts_user', JSON.stringify(currentUser));
 
       closeChannelConnectModal();
       updateChannelBanner();
-      alert(`🎉 Channel profile updated for ${handle}!`);
+      alert(`🎉 Channel Connected: ${parsed.handle}!`);
     }
 
     async function updateChannelBanner() {
       const greeting = document.getElementById('userGreetingText');
-      const channelTitleElem = document.getElementById('modalChannelName');
-      const badgeElem = document.getElementById('badgeChannelTitle');
-
-      try {
-        const res = await fetch('/api/channel-info');
-        const ch = await res.json();
-        if (ch && ch.title) {
-          channelTitleElem.innerText = ch.title;
-          badgeElem.innerText = `● Connected: ${ch.title}`;
-          if (ch.avatar) {
-            document.getElementById('channelAvatarElem').src = ch.avatar;
-            document.getElementById('channelAvatarElem').classList.remove('hidden');
-            document.getElementById('channelIconElem').classList.add('hidden');
-          }
-        }
-      } catch (e) {}
+      const badgeTitle = document.getElementById('badgeChannelTitle');
+      const linkAnchor = document.getElementById('channelLinkAnchor');
 
       if (currentUser) {
         greeting.innerText = `Welcome back, ${currentUser.displayName}!`;
+        if (currentUser.channel && currentUser.channel.handle) {
+          badgeTitle.innerText = `Connected: ${currentUser.channel.handle}`;
+          linkAnchor.href = currentUser.channel.url || `https://youtube.com/${currentUser.channel.handle}`;
+        }
       }
     }
 
