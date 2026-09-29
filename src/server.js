@@ -8,7 +8,12 @@ const { generateScript } = require('./script_generator');
 const { generateVoiceover } = require('./tts_engine');
 const { fetchBackgroundVideo } = require('./video_fetcher');
 const { renderShortVideo } = require('./video_renderer');
-const { uploadToYouTube, getChannelInfo } = require('./youtube_uploader');
+const {
+  uploadToYouTube,
+  getChannelInfo,
+  getGoogleAuthUrl,
+  exchangeCodeForTokens,
+} = require('./youtube_uploader');
 const {
   saveVideoRecord,
   updateVideoRecord,
@@ -17,6 +22,8 @@ const {
   saveSettings,
   getUserProfile,
   saveUserProfile,
+  getUserYouTubeAuth,
+  saveUserYouTubeAuth,
   DEFAULT_SETTINGS,
 } = require('./database');
 
@@ -93,16 +100,21 @@ async function generateSingleShort(options = {}) {
   const tempBg = path.join(ASSETS_DIR, `bg_${runId}.mp4`);
   const finalVideo = path.join(ASSETS_DIR, `Short_${runId}.mp4`);
 
-  console.log(`[Auto Pipeline] Generating Short for niche: ${targetNiche} (User: ${userId || 'Master Channel'})...`);
+  console.log(`[Auto Pipeline] Generating Short for niche: ${targetNiche} (User: ${userId || 'Default'})...`);
 
   // 1. Script
   const script = await generateScript(targetNiche, config.VIDEO_LANGUAGE, options.customTopic);
 
-  // Check if we are running in an environment without FFmpeg / on serverless Lambda
+  // Check if user has their own YouTube OAuth token
+  let userAuth = null;
+  if (userId) {
+    userAuth = await getUserYouTubeAuth(userId);
+  }
+  const activeRefreshToken = userAuth?.refreshToken || (userId === 'admin' ? config.YOUTUBE_REFRESH_TOKEN : null);
+
+  // Check if running on serverless Lambda
   const isServerless = Boolean(process.env.VERCEL);
-  
   if (isServerless) {
-    // In serverless, save the AI script & video metadata record directly so user sees it in queue/drafts
     const dbRecord = await saveVideoRecord({
       title: script.title,
       hook: script.hook,
@@ -118,7 +130,7 @@ async function generateSingleShort(options = {}) {
       isServerless: true,
       title: script.title,
       hook: script.hook,
-      message: '🚀 Viral Script & SEO generated! Video generation is queued on 24/7 Cloud Automation.',
+      message: '🚀 Viral Script & SEO generated! Rendering and publishing in progress.',
       recordId: dbRecord.id,
     };
   }
@@ -132,17 +144,18 @@ async function generateSingleShort(options = {}) {
   // 4. FFmpeg Render
   await renderShortVideo(tempBg, tempAudio, tempSub, finalVideo);
 
-  // 5. YouTube Upload (if autoPublish is enabled)
+  // 5. YouTube Upload (if authorized)
   let youtubeResult = null;
-  if (options.autoPublish !== false && config.YOUTUBE_CLIENT_ID && config.YOUTUBE_REFRESH_TOKEN) {
+  if (options.autoPublish !== false && activeRefreshToken) {
     youtubeResult = await uploadToYouTube(finalVideo, script, {
+      refreshToken: activeRefreshToken,
       privacyStatus: options.privacyStatus || 'public',
       pinnedComment: options.pinnedComment,
       customTags: options.customTags,
     });
   }
 
-  // 6. Save Record
+  // 6. Save Record in Database
   await saveVideoRecord({
     title: script.title,
     hook: script.hook,
@@ -168,28 +181,123 @@ async function generateSingleShort(options = {}) {
   };
 }
 
-// 1. Get Live Channel Info
-app.get('/api/channel-info', async (req, res) => {
+// 1. Google OAuth Authorization URL
+app.get('/api/auth/google-url', (req, res) => {
+  const redirectUri = req.query.redirect_uri || `${req.protocol}://${req.get('host')}/api/auth/callback`;
+  const url = getGoogleAuthUrl(redirectUri);
+  res.json({ url });
+});
+
+// 1b. Google OAuth Web Redirect Callback
+app.get('/api/auth/callback', (req, res) => {
+  const code = req.query.code;
+  const error = req.query.error;
+
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>YouTube Authorization Complete</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="background:#090d16;color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+      <div style="text-align:center;padding:2.5rem;background:#131b2e;border-radius:18px;border:1px solid #ff2b6d40;max-width:420px;box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+        <div style="font-size:42px;margin-bottom:12px;">${error ? '⚠️' : '🎬'}</div>
+        <h2 style="color:#ffffff;margin:0 0 8px;font-size:20px;">${error ? 'Authorization Cancelled' : 'YouTube Channel Connected!'}</h2>
+        <p style="color:#94a3b8;font-size:13px;line-height:1.5;margin:0 0 16px;">
+          ${error ? error : 'Authorization successful! Returning to your YouShorts Studio...'}
+        </p>
+        <script>
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'GOOGLE_AUTH_CALLBACK',
+              code: ${JSON.stringify(code || '')},
+              error: ${JSON.stringify(error || '')}
+            }, '*');
+            setTimeout(() => window.close(), 1000);
+          } else {
+            document.body.innerHTML += '<p style="margin-top:1rem;color:#f43f5e;font-size:12px;">You can now close this tab.</p>';
+          }
+        </script>
+      </div>
+    </body>
+    </html>
+  `);
+});
+
+// 2. Google OAuth Callback / Exchange Code
+app.post('/api/auth/google-callback', async (req, res) => {
+  const { code, redirectUri, uid } = req.body;
+  if (!code) return res.status(400).json({ error: 'Missing code' });
+
   try {
-    const info = await getChannelInfo();
-    res.json(info);
-  } catch (e) {
-    res.json({ connected: Boolean(config.YOUTUBE_REFRESH_TOKEN), title: 'YouTube Channel', handle: '@AutoShorts' });
+    const fallbackRedirect = `${req.protocol}://${req.get('host')}/api/auth/callback`;
+    const tokenData = await exchangeCodeForTokens(code, redirectUri || fallbackRedirect);
+    if (uid) {
+      await saveUserYouTubeAuth(uid, {
+        refreshToken: tokenData.refreshToken,
+        channel: tokenData.channelInfo,
+      });
+      await saveUserProfile(uid, {
+        channel: tokenData.channelInfo,
+      });
+    }
+
+    res.json({
+      success: true,
+      channel: tokenData.channelInfo,
+    });
+  } catch (err) {
+    console.error('[OAuth Callback Error]:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
-// 2. Get Stats (Channel Wide & User Scoped)
-app.get('/api/stats', async (req, res) => {
+// 3. Get Channel Info for User or Global
+app.get('/api/channel-info', async (req, res) => {
   const userId = req.query.uid || null;
   try {
-    // 1. Check user path first
-    let dbPath = `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/videos.json`;
-    if (userId && userId !== 'admin' && userId !== 'default') {
-      const userPath = `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/users/${userId}/videos.json`;
-      const userRes = await axios.get(userPath).catch(() => ({ data: null }));
-      if (userRes.data && Object.keys(userRes.data).length > 0) {
-        dbPath = userPath;
+    let refreshToken = null;
+    if (userId && userId !== 'admin') {
+      const userAuth = await getUserYouTubeAuth(userId);
+      refreshToken = userAuth?.refreshToken;
+      if (!refreshToken) {
+        return res.json({ connected: false, title: null, handle: null, avatar: null });
       }
+    } else if (userId === 'admin') {
+      refreshToken = config.YOUTUBE_REFRESH_TOKEN;
+    } else {
+      return res.json({ connected: false, title: null, handle: null, avatar: null });
+    }
+
+    const info = await getChannelInfo(refreshToken);
+    res.json(info);
+  } catch (e) {
+    res.json({ connected: false, title: null, handle: null, avatar: null });
+  }
+});
+
+// 4. Get Stats (User Scoped or Admin)
+app.get('/api/stats', async (req, res) => {
+  const userId = req.query.uid || null;
+  if (!userId) {
+    return res.json({
+      totalVideos: 0,
+      youtubeVideos: 0,
+      drafts: 0,
+      dailyUploadCount: 2,
+      timeSlots: ['08:30', '17:30'],
+      aiOnline: true,
+      pexelsOnline: true,
+      youtubeConnected: false,
+      channel: null,
+    });
+  }
+
+  try {
+    let dbPath = `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/users/${userId}/videos.json`;
+    if (userId === 'admin') {
+      dbPath = `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/videos.json`;
     }
 
     const dbRes = await axios.get(dbPath).catch(() => ({ data: {} }));
@@ -198,7 +306,12 @@ app.get('/api/stats', async (req, res) => {
     const youtubeVideos = videos.filter((v) => Boolean(v.youtubeUrl)).length;
     const drafts = videos.length - youtubeVideos;
     const settings = await getSettings(userId);
-    const channelInfo = await getChannelInfo();
+    
+    let userAuth = null;
+    if (userId && userId !== 'admin') {
+      userAuth = await getUserYouTubeAuth(userId);
+    }
+    const hasChannel = Boolean(userAuth?.refreshToken || (userId === 'admin' && config.YOUTUBE_REFRESH_TOKEN));
 
     res.json({
       totalVideos: videos.length,
@@ -208,25 +321,25 @@ app.get('/api/stats', async (req, res) => {
       timeSlots: settings.timeSlots || ['08:30', '17:30'],
       aiOnline: true,
       pexelsOnline: true,
-      youtubeConnected: channelInfo.connected,
-      channel: channelInfo,
+      youtubeConnected: hasChannel,
+      channel: userAuth?.channel || (userId === 'admin' ? await getChannelInfo() : null),
     });
   } catch (err) {
     res.json({ totalVideos: 0, youtubeVideos: 0, drafts: 0, youtubeConnected: false });
   }
 });
 
-// 3. Get Video History
+// 5. Get Video History (User Scoped or Admin)
 app.get('/api/videos', async (req, res) => {
   const userId = req.query.uid || null;
+  if (!userId) {
+    return res.json({ videos: [] });
+  }
+
   try {
-    let dbPath = `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/videos.json`;
-    if (userId && userId !== 'admin' && userId !== 'default') {
-      const userPath = `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/users/${userId}/videos.json`;
-      const userRes = await axios.get(userPath).catch(() => ({ data: null }));
-      if (userRes.data && Object.keys(userRes.data).length > 0) {
-        dbPath = userPath;
-      }
+    let dbPath = `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/users/${userId}/videos.json`;
+    if (userId === 'admin') {
+      dbPath = `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/videos.json`;
     }
 
     const dbRes = await axios.get(dbPath).catch(() => ({ data: {} }));
@@ -248,7 +361,7 @@ app.get('/api/videos', async (req, res) => {
   }
 });
 
-// 4. Get Settings
+// 6. Get Settings
 app.get('/api/settings', async (req, res) => {
   const userId = req.query.uid || null;
   try {
@@ -259,7 +372,7 @@ app.get('/api/settings', async (req, res) => {
   }
 });
 
-// 5. Save Settings
+// 7. Save Settings
 app.post('/api/settings', async (req, res) => {
   const userId = req.body.uid || null;
   try {
@@ -271,7 +384,7 @@ app.post('/api/settings', async (req, res) => {
   }
 });
 
-// 6. User Profile API
+// 8. User Profile API
 app.get('/api/user-profile', async (req, res) => {
   const userId = req.query.uid;
   if (!userId) return res.json({ profile: null });
@@ -286,7 +399,7 @@ app.post('/api/user-profile', async (req, res) => {
   res.json(result);
 });
 
-// 7. Generate Single Short
+// 9. Generate Single Short
 app.post('/api/generate', async (req, res) => {
   const userId = req.body.uid || null;
   try {
@@ -302,7 +415,7 @@ app.post('/api/generate', async (req, res) => {
   }
 });
 
-// 8. Batch Generation
+// 10. Batch Generation
 app.post('/api/trigger-batch', async (req, res) => {
   const userId = req.body.uid || null;
   const count = Math.min(Math.max(parseInt(req.body.count, 10) || 2, 1), 6);
@@ -330,13 +443,17 @@ app.post('/api/trigger-batch', async (req, res) => {
   })();
 });
 
-// 9. Upload Local Draft to YouTube
+// 11. Upload Local Draft to YouTube
 app.post('/api/upload-draft', async (req, res) => {
   const { id, title, hook, niche, videoPath, uid } = req.body;
   if (!id) return res.status(400).json({ error: 'Missing video ID' });
 
   try {
     const settings = await getSettings(uid);
+    let userAuth = null;
+    if (uid) userAuth = await getUserYouTubeAuth(uid);
+    const activeRefreshToken = userAuth?.refreshToken || (uid === 'admin' ? config.YOUTUBE_REFRESH_TOKEN : null);
+
     const filePath = videoPath || path.join(ASSETS_DIR, `Short_${id}.mp4`);
     let targetFile = filePath;
 
@@ -358,6 +475,7 @@ app.post('/api/upload-draft', async (req, res) => {
     };
 
     const ytResult = await uploadToYouTube(targetFile, scriptData, {
+      refreshToken: activeRefreshToken,
       privacyStatus: settings.privacyStatus || 'public',
       pinnedComment: settings.pinnedComment,
       customTags: settings.customTags,
@@ -367,7 +485,7 @@ app.post('/api/upload-draft', async (req, res) => {
       await updateVideoRecord(id, { youtubeUrl: ytResult.videoUrl }, uid);
       return res.json({ success: true, youtubeUrl: ytResult.videoUrl });
     } else {
-      return res.status(500).json({ error: 'YouTube upload failed. Check API quota.' });
+      return res.status(500).json({ error: 'YouTube upload failed. Check API authorization.' });
     }
   } catch (err) {
     console.error('[Upload Draft Error]:', err.message);
@@ -375,7 +493,7 @@ app.post('/api/upload-draft', async (req, res) => {
   }
 });
 
-// 10. Delete Video
+// 12. Delete Video
 app.post('/api/delete-video', async (req, res) => {
   const { id, videoPath, uid } = req.body;
   if (!id) return res.status(400).json({ error: 'Missing video ID' });

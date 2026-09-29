@@ -157,7 +157,7 @@
       </h1>
 
       <p class="text-base sm:text-lg md:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-        Sign in, link your YouTube channel with your name or link, and let our AI create high-retention viral videos, natural voiceovers, dynamic animated subtitles, and auto-post daily on schedule.
+        Sign in, link your YouTube channel in 1-click, and let our AI create high-retention viral videos, natural voiceovers, dynamic animated subtitles, and auto-post daily on your schedule.
       </p>
 
       <div class="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -174,7 +174,7 @@
       <div class="flex flex-wrap items-center justify-center gap-6 text-xs text-gray-500 pt-3">
         <span><i class="fa-solid fa-check text-emerald-400 mr-1.5"></i>100% Free / ₹0 Cost Stack</span>
         <span><i class="fa-solid fa-check text-emerald-400 mr-1.5"></i>No Credit Card Required</span>
-        <span><i class="fa-solid fa-check text-emerald-400 mr-1.5"></i>Link by Channel Name or URL</span>
+        <span><i class="fa-solid fa-check text-emerald-400 mr-1.5"></i>Direct YouTube OAuth Connect</span>
         <span><i class="fa-solid fa-check text-emerald-400 mr-1.5"></i>Zero Hosting Fees</span>
       </div>
     </section>
@@ -312,7 +312,7 @@
   <!-- ==================================================================== -->
   <main id="appDashboard" class="hidden flex-1 p-6 max-w-7xl mx-auto w-full space-y-7">
     
-    <!-- User Welcome & Clean Channel Status Banner -->
+    <!-- User Welcome & Channel Status Banner -->
     <div id="channelStatusCard" class="p-5 rounded-2xl bg-gradient-to-r from-pink-950/40 via-purple-950/30 to-dark-800 border border-pink-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
       <div class="flex items-center space-x-4">
         <div id="channelBadgeIcon" class="w-12 h-12 rounded-2xl bg-red-600/20 text-red-400 flex items-center justify-center text-2xl border border-red-500/30 shadow-inner overflow-hidden">
@@ -328,14 +328,14 @@
               <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-70"></i>
             </a>
           </div>
-          <p id="channelSubText" class="text-xs text-gray-400 mt-0.5">24/7 Autonomous upload pipeline is active and publishing on schedule.</p>
+          <p id="channelSubText" class="text-xs text-gray-400 mt-0.5">Automated video pipeline is ready to create and publish Shorts on schedule.</p>
         </div>
       </div>
       
       <div class="flex items-center space-x-3">
-        <button onclick="openChannelConnectModal()" class="px-4 py-2 rounded-xl bg-dark-700 hover:bg-dark-600 border border-gray-700 text-gray-200 font-semibold text-xs transition-all flex items-center space-x-1.5">
-          <i class="fa-solid fa-pen text-xs text-pink-400"></i>
-          <span>Manage Channel</span>
+        <button onclick="openChannelConnectModal()" class="px-4 py-2 rounded-xl bg-red-600/20 hover:bg-red-600/30 border border-red-500/40 text-red-300 font-semibold text-xs transition-all flex items-center space-x-1.5">
+          <i class="fa-brands fa-youtube text-sm"></i>
+          <span>Link / Change Channel</span>
         </button>
       </div>
     </div>
@@ -424,7 +424,7 @@
 
         <div>
           <label class="block text-xs font-semibold text-gray-300 mb-1.5">Custom Topic / Prompt (Optional)</label>
-          <input type="text" id="customTopicInput" placeholder="Enter topic prompt (optional)" class="w-full bg-dark-800 border border-gray-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-pink-500 transition-colors">
+          <input type="text" id="customTopicInput" placeholder="Enter custom topic prompt (optional)" class="w-full bg-dark-800 border border-gray-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-pink-500 transition-colors">
           <p class="text-[11px] text-gray-500 mt-1">Leave empty for Groq AI trending auto-generation.</p>
         </div>
 
@@ -457,7 +457,7 @@
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-800 pb-3">
           <div class="flex items-center space-x-2 text-white font-bold text-sm">
             <i class="fa-solid fa-photo-film text-pink-400"></i>
-            <span>Channel Video Library & Shorts Feed</span>
+            <span>Your Personal Video Library & Shorts Feed</span>
           </div>
 
           <!-- Filter Tabs -->
@@ -474,7 +474,7 @@
         <div id="videoGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[580px] overflow-y-auto pr-1">
           <div class="p-8 text-center text-gray-500 col-span-2">
             <i class="fa-solid fa-film text-3xl mb-2 text-gray-600 animate-pulse"></i>
-            <p>Loading your channel video library...</p>
+            <p>Loading your personal video library...</p>
           </div>
         </div>
       </div>
@@ -547,14 +547,37 @@
           <i class="fa-brands fa-youtube"></i>
         </div>
         <div>
-          <h3 class="text-lg font-bold text-white">Connect YouTube Channel</h3>
-          <p class="text-xs text-gray-400">Link your channel by name or link for automated Shorts</p>
+          <h3 class="text-lg font-bold text-white">Link Your YouTube Channel</h3>
+          <p class="text-xs text-gray-400">Authorize automated Shorts uploads to your channel</p>
         </div>
       </div>
 
       <div class="space-y-4 text-xs">
+        <!-- 1. Direct Google OAuth Connect Button -->
+        <div class="p-4 rounded-2xl bg-gradient-to-r from-red-950/40 to-dark-800 border border-red-500/30 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-white text-xs flex items-center space-x-1.5">
+              <i class="fa-brands fa-google text-red-400"></i>
+              <span>Official Google YouTube Authorization</span>
+            </span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300">Recommended</span>
+          </div>
+          <p class="text-gray-400 text-[11px] leading-relaxed">
+            Authorize YouShorts AI with 1-click Google OAuth so new videos upload directly to your channel on autopilot.
+          </p>
+          <button onclick="startGoogleOAuthFlow()" class="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center justify-center space-x-2 transition-all shadow-lg shadow-red-600/20">
+            <i class="fa-brands fa-google"></i>
+            <span>Authorize Channel via Google OAuth</span>
+          </button>
+        </div>
+
+        <div class="relative flex items-center justify-center py-1">
+          <div class="border-t border-gray-800 w-full"></div>
+          <span class="bg-dark-900 px-3 text-[11px] text-gray-500 absolute">OR LINK BY NAME / URL</span>
+        </div>
+
         <div>
-          <label class="block font-semibold text-gray-300 mb-1">Your YouTube Channel Name or Link</label>
+          <label class="block font-semibold text-gray-300 mb-1">Your Channel Name or Link</label>
           <input type="text" id="inputChannelHandle" placeholder="Paste channel link or enter @handle" class="w-full bg-dark-800 border border-gray-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-red-500">
         </div>
 
@@ -567,21 +590,13 @@
             <option value="motivation">🦁 Stoic Motivation & The 1% Rule</option>
           </select>
         </div>
-
-        <div class="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center space-x-3">
-          <i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
-          <div>
-            <p class="font-bold text-white text-xs">Auto-Uploads Ready</p>
-            <p class="text-gray-400 text-[11px]">All generated 1080x1920 HD Shorts will be formatted with high CTR hooks and SEO tags.</p>
-          </div>
-        </div>
       </div>
 
       <div class="flex items-center justify-end space-x-2 pt-2 border-t border-gray-800">
         <button onclick="closeChannelConnectModal()" class="px-4 py-2 rounded-xl bg-dark-700 hover:bg-dark-600 text-gray-300 text-xs font-semibold">Cancel</button>
-        <button onclick="saveConnectedChannel()" class="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-lg shadow-red-600/25 flex items-center space-x-1.5">
-          <i class="fa-brands fa-youtube"></i>
-          <span>Save & Connect Channel</span>
+        <button onclick="saveConnectedChannel()" class="px-5 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold shadow-lg shadow-pink-600/25 flex items-center space-x-1.5">
+          <i class="fa-solid fa-check"></i>
+          <span>Save Channel Profile</span>
         </button>
       </div>
     </div>
@@ -751,6 +766,10 @@
     let currentSettings = {};
     let isShowingLanding = true;
 
+    function getUidQuery() {
+      return currentUser && currentUser.uid ? `?uid=${currentUser.uid}` : '';
+    }
+
     // Smart Channel Name / URL Parser
     function parseChannelInput(input) {
       if (!input) return { handle: '@Creator', name: 'Creator', url: 'https://youtube.com' };
@@ -800,6 +819,63 @@
     }
     function closeChannelConnectModal() {
       document.getElementById('channelModal').classList.add('hidden');
+    }
+
+    // Google OAuth Direct Flow
+    let oauthWindow = null;
+
+    window.addEventListener('message', async (event) => {
+      if (event.data && event.data.type === 'GOOGLE_AUTH_CALLBACK') {
+        if (event.data.code) {
+          await exchangeOAuthCode(event.data.code);
+        } else if (event.data.error) {
+          alert('OAuth Error: ' + event.data.error);
+        }
+      }
+    });
+
+    async function exchangeOAuthCode(authCode) {
+      try {
+        const redirectUri = window.location.origin + '/api/auth/callback';
+        const exchangeRes = await fetch('/api/auth/google-callback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: authCode.trim(),
+            redirectUri,
+            uid: currentUser ? currentUser.uid : null,
+          })
+        });
+        const result = await exchangeRes.json();
+        if (result.success && result.channel) {
+          currentUser.channel = result.channel;
+          currentUser.displayName = result.channel.handle || result.channel.title;
+          localStorage.setItem('youshorts_user', JSON.stringify(currentUser));
+          updateChannelBanner();
+          closeChannelConnectModal();
+          loadStats();
+          alert(`🎉 Success! YouTube Channel "${result.channel.title}" (@${result.channel.handle || 'Shorts'}) authorized for 24/7 direct uploads!`);
+        } else {
+          alert("Authentication note: " + (result.error || "Token stored"));
+        }
+      } catch (err) {
+        alert("Exchange error: " + err.message);
+      }
+    }
+
+    async function startGoogleOAuthFlow() {
+      try {
+        const redirectUri = window.location.origin + '/api/auth/callback';
+        const res = await fetch(`/api/auth/google-url?redirect_uri=${encodeURIComponent(redirectUri)}`);
+        const data = await res.json();
+        if (data.url) {
+          oauthWindow = window.open(data.url, 'Google OAuth', 'width=600,height=720');
+        } else {
+          alert("Could not initialize Google OAuth. Please check client credentials.");
+        }
+      } catch (err) {
+        alert("OAuth error: " + err.message);
+      }
     }
 
     // Auth Operations
@@ -894,9 +970,23 @@
       currentUser.channel = { ...parsed, niche, linkedAt: new Date().toISOString() };
       localStorage.setItem('youshorts_user', JSON.stringify(currentUser));
 
+      try {
+        await fetch('/api/user-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            uid: currentUser.uid,
+            profile: {
+              displayName: currentUser.displayName,
+              channel: currentUser.channel
+            }
+          })
+        });
+      } catch (e) {}
+
       closeChannelConnectModal();
       updateChannelBanner();
-      alert(`🎉 Channel Connected: ${parsed.handle}!`);
+      alert(`🎉 Channel Linked: ${parsed.handle}!`);
     }
 
     async function updateChannelBanner() {
@@ -951,7 +1041,7 @@
     // Load Stats
     async function loadStats() {
       try {
-        const res = await fetch('/api/stats');
+        const res = await fetch('/api/stats' + getUidQuery());
         const data = await res.json();
         document.getElementById('statTotal').innerText = data.totalVideos || 0;
         document.getElementById('statYouTube').innerText = data.youtubeVideos || 0;
@@ -967,7 +1057,7 @@
     // Load Settings
     async function loadSettings() {
       try {
-        const res = await fetch('/api/settings');
+        const res = await fetch('/api/settings' + getUidQuery());
         currentSettings = await res.json();
         
         document.getElementById('cfgDailyCount').value = currentSettings.dailyUploadCount || 2;
@@ -1018,6 +1108,7 @@
       const checkedNiches = Array.from(document.querySelectorAll('.niche-check:checked')).map(cb => cb.value);
 
       const payload = {
+        uid: currentUser ? currentUser.uid : null,
         dailyUploadCount: dailyCount,
         privacyStatus,
         timeSlots,
@@ -1071,7 +1162,7 @@
 
     async function loadVideos() {
       try {
-        const res = await fetch('/api/videos');
+        const res = await fetch('/api/videos' + getUidQuery());
         const data = await res.json();
         currentVideos = data.videos || [];
         
@@ -1102,8 +1193,8 @@
         grid.innerHTML = `
           <div class="p-10 text-center text-gray-500 col-span-2">
             <i class="fa-solid fa-video-slash text-4xl mb-3 text-gray-600"></i>
-            <p class="text-sm font-medium">No videos found yet.</p>
-            <p class="text-xs text-gray-600 mt-1">Click "Generate Short" to create your next viral Reel!</p>
+            <p class="text-sm font-medium">No videos found in your personal studio yet.</p>
+            <p class="text-xs text-gray-600 mt-1">Click "Generate & Publish Short" below to create your first viral Reel!</p>
           </div>
         `;
         return;
@@ -1139,13 +1230,17 @@
               <div class="text-[11px] text-gray-500">${dateStr}</div>
             </div>
 
-            <div class="pt-3.5 flex items-center justify-between border-t border-gray-800/80 mt-3 gap-2">
-              <div class="flex items-center space-x-1.5">
+            <div class="pt-3.5 flex items-center justify-between border-t border-gray-800/80 mt-3 gap-2 flex-wrap">
+              <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
                 ${v.videoUrl ? `
                   <button onclick="playVideo('${v.videoUrl}', '${encodedTitle}', '${encodedHook}', '${v.youtubeUrl || ''}')" class="px-2.5 py-1.5 rounded-lg bg-pink-500/15 hover:bg-pink-500 text-pink-300 hover:text-white text-xs font-semibold flex items-center space-x-1 transition-all" title="Preview Video">
                     <i class="fa-solid fa-play text-[10px]"></i>
                     <span>Preview</span>
                   </button>
+                  <a href="${v.videoUrl}" download="${(v.title || 'Short').replace(/[^a-zA-Z0-9_-]/g, '_')}.mp4" class="px-2 py-1.5 rounded-lg bg-indigo-500/15 hover:bg-indigo-600 text-indigo-300 hover:text-white text-xs font-semibold flex items-center space-x-1 transition-all" title="Download HD MP4">
+                    <i class="fa-solid fa-download text-[10px]"></i>
+                    <span>MP4</span>
+                  </a>
                 ` : ''}
 
                 ${!isYT ? `
@@ -1161,13 +1256,29 @@
                 `}
               </div>
 
-              <button onclick="deleteVideo('${v.id}', '${v.videoPath || ''}')" class="p-1.5 text-gray-500 hover:text-red-400 text-xs transition-colors" title="Delete Short">
-                <i class="fa-solid fa-trash"></i>
-              </button>
+              <div class="flex items-center space-x-1">
+                <button onclick="copySeoInfo('${encodedTitle}', '${encodedHook}', '${v.niche || ''}')" class="p-1.5 text-gray-400 hover:text-pink-400 text-xs transition-colors" title="Copy Title & Tags">
+                  <i class="fa-solid fa-copy"></i>
+                </button>
+                <button onclick="deleteVideo('${v.id}', '${v.videoPath || ''}')" class="p-1.5 text-gray-500 hover:text-red-400 text-xs transition-colors" title="Delete Short">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
             </div>
           </div>
         `;
       }).join('');
+    }
+
+    function copySeoInfo(encodedTitle, encodedHook, niche) {
+      const title = decodeURIComponent(encodedTitle);
+      const hook = decodeURIComponent(encodedHook);
+      const textToCopy = `📌 Title:\n${title}\n\n🔥 Hook:\n"${hook}"\n\n🏷️ Tags:\n#shorts #youtubeshorts #viral #trending #${niche || 'facts'} #mindset`;
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        alert('📋 Copied YouTube Title, Hook & Tags to clipboard!');
+      }).catch(() => {
+        prompt('Copy your SEO metadata:', textToCopy);
+      });
     }
 
     async function publishDraft(id, title, hook, niche, videoPath) {
@@ -1183,6 +1294,7 @@
             hook: decodeURIComponent(hook),
             niche,
             videoPath,
+            uid: currentUser ? currentUser.uid : null,
           })
         });
 
@@ -1191,7 +1303,7 @@
           alert('🎉 Upload Successful!\nLive URL: ' + data.youtubeUrl);
           loadVideos();
         } else {
-          alert('Upload error: ' + (data.error || 'Check YouTube API quota'));
+          alert('Upload note: ' + (data.error || 'Check channel authorization'));
         }
       } catch (err) {
         alert('Network error: ' + err.message);
@@ -1205,7 +1317,7 @@
         await fetch('/api/delete-video', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, videoPath })
+          body: JSON.stringify({ id, videoPath, uid: currentUser ? currentUser.uid : null })
         });
         loadVideos();
       } catch (err) {
@@ -1219,7 +1331,7 @@
         const res = await fetch('/api/trigger-batch', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ count })
+          body: JSON.stringify({ count, uid: currentUser ? currentUser.uid : null })
         });
         alert(`Batch generation of ${count} videos started in background! Refresh in 1-2 minutes to see them.`);
       } catch (err) {
@@ -1243,12 +1355,12 @@
       setTimeout(() => {
         statusText.innerText = '🎙️ Synthesizing ultra-natural voiceover (Edge-TTS)...';
         progressBar.style.width = '50%';
-      }, 4000);
+      }, 3000);
 
       setTimeout(() => {
-        statusText.innerText = '🎞️ Fetching cinematic stock & rendering 1080x1920 HD...';
+        statusText.innerText = '🎞️ Rendering 1080x1920 HD with animated captions...';
         progressBar.style.width = '75%';
-      }, 8000);
+      }, 6000);
 
       try {
         const niche = document.getElementById('nicheSelect').value;
@@ -1262,6 +1374,7 @@
             niche,
             voice,
             customTopic,
+            uid: currentUser ? currentUser.uid : null,
           })
         });
 
@@ -1281,7 +1394,7 @@
           btn1.disabled = false;
           btn2.disabled = false;
           loadVideos();
-        }, 2500);
+        }, 2000);
       } catch (e) {
         statusText.innerText = '❌ Error: ' + e.message;
         btn1.disabled = false;

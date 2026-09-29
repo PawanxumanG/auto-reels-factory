@@ -4,28 +4,29 @@ const config = require('./config');
 const DB_BASE = config.FIREBASE_DB_URL.replace(/\/+$/, '');
 
 function getBasePath(userId, subpath) {
-  if (userId && userId !== 'admin' && userId !== 'default') {
+  if (userId && userId === 'admin') {
+    return `${DB_BASE}/shorts_factory/${subpath}`;
+  }
+  if (userId) {
     return `${DB_BASE}/shorts_factory/users/${userId}/${subpath}`;
   }
-  return `${DB_BASE}/shorts_factory/${subpath}`;
+  return null;
 }
 
 async function saveVideoRecord(record, userId = null) {
   try {
     const id = Date.now().toString();
+    const targetUid = userId || 'admin';
     const payload = {
       ...record,
-      userId: userId || 'admin',
+      userId: targetUid,
       createdAt: new Date().toISOString(),
     };
     
     // Save to user path
-    const userPath = getBasePath(userId, `videos/${id}.json`);
-    await axios.put(userPath, payload);
-
-    // If specific user, also log in global index
-    if (userId && userId !== 'admin') {
-      await axios.put(`${DB_BASE}/shorts_factory/videos/${id}.json`, payload).catch(() => {});
+    const userPath = getBasePath(targetUid, `videos/${id}.json`);
+    if (userPath) {
+      await axios.put(userPath, payload);
     }
 
     return { success: true, id };
@@ -37,8 +38,11 @@ async function saveVideoRecord(record, userId = null) {
 
 async function updateVideoRecord(id, updates, userId = null) {
   try {
-    const userPath = getBasePath(userId, `videos/${id}.json`);
-    await axios.patch(userPath, updates);
+    const targetUid = userId || 'admin';
+    const userPath = getBasePath(targetUid, `videos/${id}.json`);
+    if (userPath) {
+      await axios.patch(userPath, updates);
+    }
     return { success: true };
   } catch (err) {
     console.warn('[DB] Failed to update video record:', err.message);
@@ -48,8 +52,11 @@ async function updateVideoRecord(id, updates, userId = null) {
 
 async function deleteVideoRecord(id, userId = null) {
   try {
-    const userPath = getBasePath(userId, `videos/${id}.json`);
-    await axios.delete(userPath);
+    const targetUid = userId || 'admin';
+    const userPath = getBasePath(targetUid, `videos/${id}.json`);
+    if (userPath) {
+      await axios.delete(userPath);
+    }
     return { success: true };
   } catch (err) {
     console.warn('[DB] Failed to delete video record:', err.message);
@@ -59,7 +66,9 @@ async function deleteVideoRecord(id, userId = null) {
 
 async function getRecentTopics(userId = null) {
   try {
-    const userPath = getBasePath(userId, `videos.json?shallow=true`);
+    const targetUid = userId || 'admin';
+    const userPath = getBasePath(targetUid, `videos.json?shallow=true`);
+    if (!userPath) return [];
     const res = await axios.get(userPath);
     if (!res.data) return [];
     return Object.keys(res.data);
@@ -81,7 +90,9 @@ const DEFAULT_SETTINGS = {
 
 async function getSettings(userId = null) {
   try {
-    const userPath = getBasePath(userId, `settings.json`);
+    const targetUid = userId || 'admin';
+    const userPath = getBasePath(targetUid, `settings.json`);
+    if (!userPath) return DEFAULT_SETTINGS;
     const res = await axios.get(userPath);
     if (!res.data) return DEFAULT_SETTINGS;
     return { ...DEFAULT_SETTINGS, ...res.data };
@@ -92,8 +103,11 @@ async function getSettings(userId = null) {
 
 async function saveSettings(settings, userId = null) {
   try {
-    const userPath = getBasePath(userId, `settings.json`);
-    await axios.put(userPath, settings);
+    const targetUid = userId || 'admin';
+    const userPath = getBasePath(targetUid, `settings.json`);
+    if (userPath) {
+      await axios.put(userPath, settings);
+    }
     return { success: true, settings };
   } catch (err) {
     console.warn('[DB] Failed to save settings:', err.message);
@@ -124,6 +138,29 @@ async function saveUserProfile(userId, profile) {
   }
 }
 
+async function getUserYouTubeAuth(userId) {
+  if (!userId) return null;
+  try {
+    const res = await axios.get(`${DB_BASE}/shorts_factory/users/${userId}/youtube_auth.json`);
+    return res.data || null;
+  } catch (err) {
+    return null;
+  }
+}
+
+async function saveUserYouTubeAuth(userId, authData) {
+  if (!userId) return { success: false };
+  try {
+    await axios.put(`${DB_BASE}/shorts_factory/users/${userId}/youtube_auth.json`, {
+      ...authData,
+      linkedAt: new Date().toISOString(),
+    });
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
 module.exports = {
   saveVideoRecord,
   getRecentTopics,
@@ -133,5 +170,7 @@ module.exports = {
   saveSettings,
   getUserProfile,
   saveUserProfile,
+  getUserYouTubeAuth,
+  saveUserYouTubeAuth,
   DEFAULT_SETTINGS,
 };

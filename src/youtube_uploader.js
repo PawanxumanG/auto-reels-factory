@@ -2,20 +2,60 @@ const fs = require('fs');
 const { google } = require('googleapis');
 const config = require('./config');
 
-let cachedChannelInfo = null;
-let lastChannelFetchTime = 0;
+/**
+ * Generate Google OAuth 2.0 Authorization URL for YouTube Upload Permissions
+ */
+function getGoogleAuthUrl(redirectUri = 'http://localhost:3500/api/auth/callback') {
+  if (!config.YOUTUBE_CLIENT_ID || !config.YOUTUBE_CLIENT_SECRET) {
+    return null;
+  }
+  const oauth2Client = new google.auth.OAuth2(
+    config.YOUTUBE_CLIENT_ID,
+    config.YOUTUBE_CLIENT_SECRET,
+    redirectUri
+  );
+
+  return oauth2Client.generateAuthUrl({
+    access_type: 'offline',
+    prompt: 'consent',
+    scope: [
+      'https://www.googleapis.com/auth/youtube.upload',
+      'https://www.googleapis.com/auth/youtube.readonly',
+      'https://www.googleapis.com/auth/userinfo.profile',
+      'https://www.googleapis.com/auth/userinfo.email',
+    ],
+  });
+}
 
 /**
- * Get Authenticated YouTube Channel Information
+ * Exchange Authorization Code for Refresh Token & Fetch Channel Info
  */
-async function getChannelInfo() {
-  if (!config.YOUTUBE_CLIENT_ID || !config.YOUTUBE_CLIENT_SECRET || !config.YOUTUBE_REFRESH_TOKEN) {
-    return { connected: false, title: null, handle: null, avatar: null };
-  }
+async function exchangeCodeForTokens(code, redirectUri = 'http://localhost:3500/api/auth/callback') {
+  const oauth2Client = new google.auth.OAuth2(
+    config.YOUTUBE_CLIENT_ID,
+    config.YOUTUBE_CLIENT_SECRET,
+    redirectUri
+  );
 
-  // Cache for 5 minutes
-  if (cachedChannelInfo && (Date.now() - lastChannelFetchTime < 300000)) {
-    return cachedChannelInfo;
+  const { tokens } = await oauth2Client.getToken(code);
+  oauth2Client.setCredentials(tokens);
+
+  const channelInfo = await getChannelInfo(tokens.refresh_token);
+
+  return {
+    refreshToken: tokens.refresh_token,
+    accessToken: tokens.access_token,
+    channelInfo,
+  };
+}
+
+/**
+ * Get Authenticated YouTube Channel Information (Custom Refresh Token or Default)
+ */
+async function getChannelInfo(customRefreshToken = null) {
+  const refreshToken = customRefreshToken || config.YOUTUBE_REFRESH_TOKEN;
+  if (!config.YOUTUBE_CLIENT_ID || !config.YOUTUBE_CLIENT_SECRET || !refreshToken) {
+    return { connected: false, title: null, handle: null, avatar: null };
   }
 
   try {
@@ -25,7 +65,7 @@ async function getChannelInfo() {
       'http://localhost:8080'
     );
     oauth2Client.setCredentials({
-      refresh_token: config.YOUTUBE_REFRESH_TOKEN,
+      refresh_token: refreshToken,
     });
 
     const youtube = google.youtube({
@@ -40,7 +80,7 @@ async function getChannelInfo() {
 
     if (res.data.items && res.data.items.length > 0) {
       const ch = res.data.items[0];
-      cachedChannelInfo = {
+      return {
         connected: true,
         channelId: ch.id,
         title: ch.snippet?.title || 'YouTube Channel',
@@ -49,11 +89,9 @@ async function getChannelInfo() {
         subscriberCount: ch.statistics?.subscriberCount || 0,
         videoCount: ch.statistics?.videoCount || 0,
       };
-      lastChannelFetchTime = Date.now();
-      return cachedChannelInfo;
     }
 
-    return { connected: true, title: 'Connected Channel', handle: '@AutoShorts', avatar: null };
+    return { connected: true, title: 'YouTube Channel', handle: '@AutoShorts', avatar: null };
   } catch (err) {
     console.warn('[YouTube] Could not fetch channel info:', err.message);
     return { connected: true, title: 'YouTube Channel', handle: '@AutoShorts', avatar: null };
@@ -64,9 +102,12 @@ async function getChannelInfo() {
  * Upload Video to YouTube Shorts via YouTube Data API v3 with full SEO metadata
  * @param {string} videoFilePath
  * @param {object} scriptData
+ * @param {object} uploadOptions
  */
 async function uploadToYouTube(videoFilePath, scriptData, uploadOptions = {}) {
-  if (!config.YOUTUBE_CLIENT_ID || !config.YOUTUBE_CLIENT_SECRET || !config.YOUTUBE_REFRESH_TOKEN) {
+  const refreshToken = uploadOptions.refreshToken || config.YOUTUBE_REFRESH_TOKEN;
+
+  if (!config.YOUTUBE_CLIENT_ID || !config.YOUTUBE_CLIENT_SECRET || !refreshToken) {
     console.log('[YouTube] OAuth credentials missing. Skipping YouTube upload.');
     return null;
   }
@@ -81,7 +122,7 @@ async function uploadToYouTube(videoFilePath, scriptData, uploadOptions = {}) {
     );
 
     oauth2Client.setCredentials({
-      refresh_token: config.YOUTUBE_REFRESH_TOKEN,
+      refresh_token: refreshToken,
     });
 
     const youtube = google.youtube({
@@ -166,4 +207,6 @@ async function uploadToYouTube(videoFilePath, scriptData, uploadOptions = {}) {
 module.exports = {
   uploadToYouTube,
   getChannelInfo,
+  getGoogleAuthUrl,
+  exchangeCodeForTokens,
 };
