@@ -42,11 +42,19 @@ app.use(express.static(PUBLIC_DIR));
 app.use('/assets', express.static(ASSETS_DIR));
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+  const file = path.join(PUBLIC_DIR, 'index.html');
+  if (fs.existsSync(file)) {
+    return res.sendFile(file);
+  }
+  res.send('YouShorts AI API is running.');
 });
 
 app.get('/index.html', (req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+  const file = path.join(PUBLIC_DIR, 'index.html');
+  if (fs.existsSync(file)) {
+    return res.sendFile(file);
+  }
+  res.send('YouShorts AI API is running.');
 });
 
 // Active Cron Jobs List
