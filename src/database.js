@@ -1,7 +1,7 @@
 const axios = require('axios');
 const config = require('./config');
 
-const DB_BASE = config.FIREBASE_DB_URL.replace(/\/+$/, '');
+const DB_BASE = (config.FIREBASE_DB_URL || 'https://shorts-factory-6e290-default-rtdb.firebaseio.com').trim().replace(/\/+$/, '');
 
 function getBasePath(userId, subpath) {
   if (userId && userId === 'admin') {
@@ -11,6 +11,46 @@ function getBasePath(userId, subpath) {
     return `${DB_BASE}/shorts_factory/users/${userId}/${subpath}`;
   }
   return null;
+}
+
+async function getVideos(userId = null) {
+  try {
+    const targetUid = userId || 'admin';
+    const userPath = getBasePath(targetUid, 'videos.json');
+    if (!userPath) return [];
+    
+    let list = [];
+    const res = await axios.get(userPath).catch(() => ({ data: null }));
+    if (res.data && typeof res.data === 'object') {
+      list = Object.keys(res.data).map((k) => ({
+        id: k,
+        ...res.data[k],
+      }));
+    }
+
+    // Also check root user path if any videos were saved at user root
+    if (targetUid !== 'admin') {
+      const rootRes = await axios.get(`${DB_BASE}/shorts_factory/users/${targetUid}.json`).catch(() => ({ data: null }));
+      if (rootRes.data && typeof rootRes.data === 'object') {
+        const reserved = ['profile', 'settings', 'youtube_auth', 'videos'];
+        Object.keys(rootRes.data).forEach((k) => {
+          if (!reserved.includes(k) && rootRes.data[k] && typeof rootRes.data[k] === 'object' && rootRes.data[k].title) {
+            if (!list.find(item => item.id === k)) {
+              list.push({
+                id: k,
+                ...rootRes.data[k],
+              });
+            }
+          }
+        });
+      }
+    }
+
+    return list.reverse();
+  } catch (err) {
+    console.error('[DB] Failed to get videos:', err.message);
+    return [];
+  }
 }
 
 async function saveVideoRecord(record, userId = null) {
@@ -211,6 +251,7 @@ async function getJobStatus(id) {
 
 module.exports = {
   saveVideoRecord,
+  getVideos,
   getRecentTopics,
   updateVideoRecord,
   deleteVideoRecord,

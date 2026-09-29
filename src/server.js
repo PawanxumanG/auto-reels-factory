@@ -16,6 +16,7 @@ const {
 } = require('./youtube_uploader');
 const {
   saveVideoRecord,
+  getVideos,
   updateVideoRecord,
   deleteVideoRecord,
   getSettings,
@@ -334,14 +335,7 @@ app.get('/api/stats', async (req, res) => {
   }
 
   try {
-    let dbPath = `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/users/${userId}/videos.json`;
-    if (userId === 'admin') {
-      dbPath = `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/videos.json`;
-    }
-
-    const dbRes = await axios.get(dbPath).catch(() => ({ data: {} }));
-    const videos = dbRes.data ? Object.values(dbRes.data) : [];
-    
+    const videos = await getVideos(userId);
     const youtubeVideos = videos.filter((v) => Boolean(v.youtubeUrl)).length;
     const drafts = videos.length - youtubeVideos;
     const settings = await getSettings(userId);
@@ -376,23 +370,14 @@ app.get('/api/videos', async (req, res) => {
   }
 
   try {
-    let dbPath = `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/users/${userId}/videos.json`;
-    if (userId === 'admin') {
-      dbPath = `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/videos.json`;
-    }
-
-    const dbRes = await axios.get(dbPath).catch(() => ({ data: {} }));
-    if (!dbRes.data) return res.json({ videos: [] });
-
-    const videos = Object.keys(dbRes.data).map((k) => {
-      const v = dbRes.data[k];
+    const rawVideos = await getVideos(userId);
+    const videos = rawVideos.map((v) => {
       const filename = v.videoPath ? path.basename(v.videoPath) : null;
       return {
-        id: k,
         ...v,
         videoUrl: filename ? `/assets/${filename}` : null,
       };
-    }).reverse();
+    });
 
     res.json({ videos });
   } catch (err) {
