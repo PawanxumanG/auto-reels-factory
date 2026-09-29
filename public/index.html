@@ -1039,17 +1039,52 @@
       }
     }
 
-    async function updateChannelBanner() {
+    async function updateChannelBanner(statsData = null) {
       const greeting = document.getElementById('userGreetingText');
-      const badgeTitle = document.getElementById('badgeChannelTitle');
-      const linkAnchor = document.getElementById('channelLinkAnchor');
+      const badgeAnchor = document.getElementById('channelLinkAnchor');
+      const subText = document.getElementById('channelSubText');
+      const iconElem = document.getElementById('channelIconElem');
+      const avatarElem = document.getElementById('channelAvatarElem');
+      const userAvatar = document.getElementById('userAvatar');
 
-      if (currentUser) {
-        greeting.innerText = `Welcome back, ${currentUser.displayName}!`;
-        if (currentUser.channel && currentUser.channel.handle) {
-          badgeTitle.innerText = `Connected: ${currentUser.channel.handle}`;
-          linkAnchor.href = currentUser.channel.url || `https://youtube.com/${currentUser.channel.handle}`;
+      if (!currentUser) return;
+
+      greeting.innerText = `Welcome back, ${currentUser.displayName || 'Creator'}!`;
+
+      const isConnected = statsData ? statsData.youtubeConnected : Boolean(currentUser.channel?.refreshToken || (currentUser.uid === 'admin'));
+      const channelInfo = statsData?.channel || currentUser.channel || {};
+
+      if (isConnected) {
+        badgeAnchor.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 flex items-center space-x-1.5 transition-colors';
+        badgeAnchor.onclick = null;
+        badgeAnchor.href = channelInfo.url || (channelInfo.handle ? `https://youtube.com/${channelInfo.handle}` : 'https://youtube.com');
+        badgeAnchor.innerHTML = `
+          <i class="fa-solid fa-circle-check text-[10px]"></i>
+          <span>Connected: ${channelInfo.handle || channelInfo.title || '@Channel'}</span>
+          <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-70"></i>
+        `;
+        subText.innerText = `🚀 24/7 Autonomous upload pipeline is active and publishing to ${channelInfo.title || 'your channel'}.`;
+
+        if (channelInfo.avatar) {
+          iconElem.classList.add('hidden');
+          avatarElem.src = channelInfo.avatar;
+          avatarElem.classList.remove('hidden');
+          if (userAvatar) userAvatar.src = channelInfo.avatar;
+        } else {
+          iconElem.classList.remove('hidden');
+          avatarElem.classList.add('hidden');
         }
+      } else {
+        badgeAnchor.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 flex items-center space-x-1.5 transition-colors cursor-pointer';
+        badgeAnchor.href = '#';
+        badgeAnchor.onclick = (e) => { e.preventDefault(); openChannelConnectModal(); };
+        badgeAnchor.innerHTML = `
+          <i class="fa-solid fa-triangle-exclamation text-[10px]"></i>
+          <span>YouTube OAuth Pending (Click to Authorize)</span>
+        `;
+        subText.innerText = `⚠️ Channel authorization required. Click "Link / Change Channel" to authorize via Google OAuth for automated direct uploads.`;
+        iconElem.classList.remove('hidden');
+        avatarElem.classList.add('hidden');
       }
     }
 
@@ -1099,6 +1134,7 @@
         if (data.timeSlots && data.timeSlots.length > 0) {
           document.getElementById('statTimeSlotsPreview').innerText = data.timeSlots.join(', ');
         }
+        updateChannelBanner(data);
       } catch (e) {
         console.error('Stats error:', e);
       }
