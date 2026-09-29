@@ -2,6 +2,64 @@ const fs = require('fs');
 const { google } = require('googleapis');
 const config = require('./config');
 
+let cachedChannelInfo = null;
+let lastChannelFetchTime = 0;
+
+/**
+ * Get Authenticated YouTube Channel Information
+ */
+async function getChannelInfo() {
+  if (!config.YOUTUBE_CLIENT_ID || !config.YOUTUBE_CLIENT_SECRET || !config.YOUTUBE_REFRESH_TOKEN) {
+    return { connected: false, title: null, handle: null, avatar: null };
+  }
+
+  // Cache for 5 minutes
+  if (cachedChannelInfo && (Date.now() - lastChannelFetchTime < 300000)) {
+    return cachedChannelInfo;
+  }
+
+  try {
+    const oauth2Client = new google.auth.OAuth2(
+      config.YOUTUBE_CLIENT_ID,
+      config.YOUTUBE_CLIENT_SECRET,
+      'http://localhost:8080'
+    );
+    oauth2Client.setCredentials({
+      refresh_token: config.YOUTUBE_REFRESH_TOKEN,
+    });
+
+    const youtube = google.youtube({
+      version: 'v3',
+      auth: oauth2Client,
+    });
+
+    const res = await youtube.channels.list({
+      part: 'snippet,statistics',
+      mine: true,
+    });
+
+    if (res.data.items && res.data.items.length > 0) {
+      const ch = res.data.items[0];
+      cachedChannelInfo = {
+        connected: true,
+        channelId: ch.id,
+        title: ch.snippet?.title || 'YouTube Channel',
+        handle: ch.snippet?.customUrl || `@${ch.snippet?.title?.replace(/\s+/g, '')}`,
+        avatar: ch.snippet?.thumbnails?.default?.url || ch.snippet?.thumbnails?.medium?.url,
+        subscriberCount: ch.statistics?.subscriberCount || 0,
+        videoCount: ch.statistics?.videoCount || 0,
+      };
+      lastChannelFetchTime = Date.now();
+      return cachedChannelInfo;
+    }
+
+    return { connected: true, title: 'Connected Channel', handle: '@AutoShorts', avatar: null };
+  } catch (err) {
+    console.warn('[YouTube] Could not fetch channel info:', err.message);
+    return { connected: true, title: 'YouTube Channel', handle: '@AutoShorts', avatar: null };
+  }
+}
+
 /**
  * Upload Video to YouTube Shorts via YouTube Data API v3 with full SEO metadata
  * @param {string} videoFilePath
@@ -107,4 +165,5 @@ async function uploadToYouTube(videoFilePath, scriptData, uploadOptions = {}) {
 
 module.exports = {
   uploadToYouTube,
+  getChannelInfo,
 };

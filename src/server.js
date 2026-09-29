@@ -8,7 +8,7 @@ const { generateScript } = require('./script_generator');
 const { generateVoiceover } = require('./tts_engine');
 const { fetchBackgroundVideo } = require('./video_fetcher');
 const { renderShortVideo } = require('./video_renderer');
-const { uploadToYouTube } = require('./youtube_uploader');
+const { uploadToYouTube, getChannelInfo } = require('./youtube_uploader');
 const {
   saveVideoRecord,
   updateVideoRecord,
@@ -93,10 +93,35 @@ async function generateSingleShort(options = {}) {
   const tempBg = path.join(ASSETS_DIR, `bg_${runId}.mp4`);
   const finalVideo = path.join(ASSETS_DIR, `Short_${runId}.mp4`);
 
-  console.log(`[Auto Pipeline] Generating Short for niche: ${targetNiche} (User: ${userId || 'Admin'})...`);
+  console.log(`[Auto Pipeline] Generating Short for niche: ${targetNiche} (User: ${userId || 'Master Channel'})...`);
 
   // 1. Script
   const script = await generateScript(targetNiche, config.VIDEO_LANGUAGE, options.customTopic);
+
+  // Check if we are running in an environment without FFmpeg / on serverless Lambda
+  const isServerless = Boolean(process.env.VERCEL);
+  
+  if (isServerless) {
+    // In serverless, save the AI script & video metadata record directly so user sees it in queue/drafts
+    const dbRecord = await saveVideoRecord({
+      title: script.title,
+      hook: script.hook,
+      niche: targetNiche,
+      pexelsQuery: script.pexels_query,
+      youtubeUrl: null,
+      status: 'Cloud Scheduled',
+      privacyStatus: options.privacyStatus || 'public',
+    }, userId);
+
+    return {
+      success: true,
+      isServerless: true,
+      title: script.title,
+      hook: script.hook,
+      message: '🚀 Viral Script & SEO generated! Video generation is queued on 24/7 Cloud Automation.',
+      recordId: dbRecord.id,
+    };
+  }
 
   // 2. TTS
   await generateVoiceover(script.spoken_text, targetVoice, tempAudio, tempSub);
@@ -143,13 +168,29 @@ async function generateSingleShort(options = {}) {
   };
 }
 
-// 1. Get Stats (User Scoped or Admin)
+// 1. Get Live Channel Info
+app.get('/api/channel-info', async (req, res) => {
+  try {
+    const info = await getChannelInfo();
+    res.json(info);
+  } catch (e) {
+    res.json({ connected: Boolean(config.YOUTUBE_REFRESH_TOKEN), title: 'YouTube Channel', handle: '@AutoShorts' });
+  }
+});
+
+// 2. Get Stats (Channel Wide & User Scoped)
 app.get('/api/stats', async (req, res) => {
   const userId = req.query.uid || null;
   try {
-    const dbPath = userId
-      ? `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/users/${userId}/videos.json`
-      : `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/videos.json`;
+    // 1. Check user path first
+    let dbPath = `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/videos.json`;
+    if (userId && userId !== 'admin' && userId !== 'default') {
+      const userPath = `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/users/${userId}/videos.json`;
+      const userRes = await axios.get(userPath).catch(() => ({ data: null }));
+      if (userRes.data && Object.keys(userRes.data).length > 0) {
+        dbPath = userPath;
+      }
+    }
 
     const dbRes = await axios.get(dbPath).catch(() => ({ data: {} }));
     const videos = dbRes.data ? Object.values(dbRes.data) : [];
@@ -157,6 +198,7 @@ app.get('/api/stats', async (req, res) => {
     const youtubeVideos = videos.filter((v) => Boolean(v.youtubeUrl)).length;
     const drafts = videos.length - youtubeVideos;
     const settings = await getSettings(userId);
+    const channelInfo = await getChannelInfo();
 
     res.json({
       totalVideos: videos.length,
@@ -166,20 +208,26 @@ app.get('/api/stats', async (req, res) => {
       timeSlots: settings.timeSlots || ['08:30', '17:30'],
       aiOnline: true,
       pexelsOnline: true,
-      youtubeConnected: Boolean(config.YOUTUBE_REFRESH_TOKEN),
+      youtubeConnected: channelInfo.connected,
+      channel: channelInfo,
     });
   } catch (err) {
-    res.json({ totalVideos: 0, youtubeVideos: 0, drafts: 0 });
+    res.json({ totalVideos: 0, youtubeVideos: 0, drafts: 0, youtubeConnected: false });
   }
 });
 
-// 2. Get Video History
+// 3. Get Video History
 app.get('/api/videos', async (req, res) => {
   const userId = req.query.uid || null;
   try {
-    const dbPath = userId
-      ? `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/users/${userId}/videos.json`
-      : `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/videos.json`;
+    let dbPath = `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/videos.json`;
+    if (userId && userId !== 'admin' && userId !== 'default') {
+      const userPath = `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/users/${userId}/videos.json`;
+      const userRes = await axios.get(userPath).catch(() => ({ data: null }));
+      if (userRes.data && Object.keys(userRes.data).length > 0) {
+        dbPath = userPath;
+      }
+    }
 
     const dbRes = await axios.get(dbPath).catch(() => ({ data: {} }));
     if (!dbRes.data) return res.json({ videos: [] });
@@ -200,7 +248,7 @@ app.get('/api/videos', async (req, res) => {
   }
 });
 
-// 3. Get Settings
+// 4. Get Settings
 app.get('/api/settings', async (req, res) => {
   const userId = req.query.uid || null;
   try {
@@ -211,7 +259,7 @@ app.get('/api/settings', async (req, res) => {
   }
 });
 
-// 4. Save Settings
+// 5. Save Settings
 app.post('/api/settings', async (req, res) => {
   const userId = req.body.uid || null;
   try {
@@ -223,7 +271,7 @@ app.post('/api/settings', async (req, res) => {
   }
 });
 
-// 5. User Profile API
+// 6. User Profile API
 app.get('/api/user-profile', async (req, res) => {
   const userId = req.query.uid;
   if (!userId) return res.json({ profile: null });
@@ -238,7 +286,7 @@ app.post('/api/user-profile', async (req, res) => {
   res.json(result);
 });
 
-// 6. Generate Single Short
+// 7. Generate Single Short
 app.post('/api/generate', async (req, res) => {
   const userId = req.body.uid || null;
   try {
@@ -254,7 +302,7 @@ app.post('/api/generate', async (req, res) => {
   }
 });
 
-// 7. Batch Generation
+// 8. Batch Generation
 app.post('/api/trigger-batch', async (req, res) => {
   const userId = req.body.uid || null;
   const count = Math.min(Math.max(parseInt(req.body.count, 10) || 2, 1), 6);
@@ -282,7 +330,7 @@ app.post('/api/trigger-batch', async (req, res) => {
   })();
 });
 
-// 8. Upload Local Draft to YouTube
+// 9. Upload Local Draft to YouTube
 app.post('/api/upload-draft', async (req, res) => {
   const { id, title, hook, niche, videoPath, uid } = req.body;
   if (!id) return res.status(400).json({ error: 'Missing video ID' });
@@ -327,7 +375,7 @@ app.post('/api/upload-draft', async (req, res) => {
   }
 });
 
-// 9. Delete Video
+// 10. Delete Video
 app.post('/api/delete-video', async (req, res) => {
   const { id, videoPath, uid } = req.body;
   if (!id) return res.status(400).json({ error: 'Missing video ID' });
