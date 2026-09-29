@@ -24,6 +24,10 @@ const {
   saveUserProfile,
   getUserYouTubeAuth,
   saveUserYouTubeAuth,
+  createJob,
+  getPendingJobs,
+  updateJobStatus,
+  getJobStatus,
   DEFAULT_SETTINGS,
 } = require('./database');
 
@@ -115,6 +119,16 @@ async function generateSingleShort(options = {}) {
   // Check if running on serverless Lambda
   const isServerless = Boolean(process.env.VERCEL);
   if (isServerless) {
+    const jobRes = await createJob({
+      uid: userId,
+      niche: targetNiche,
+      voice: targetVoice,
+      customTopic: options.customTopic,
+      title: script.title,
+      hook: script.hook,
+      privacyStatus: options.privacyStatus || 'public',
+    });
+
     const dbRecord = await saveVideoRecord({
       title: script.title,
       hook: script.hook,
@@ -128,9 +142,10 @@ async function generateSingleShort(options = {}) {
     return {
       success: true,
       isServerless: true,
+      jobId: jobRes.id,
       title: script.title,
       hook: script.hook,
-      message: '🚀 Viral Script & SEO generated! Rendering and publishing in progress.',
+      message: '🚀 Viral Script crafted! Rendering & YouTube upload in progress...',
       recordId: dbRecord.id,
     };
   }
@@ -533,6 +548,52 @@ app.post('/api/delete-video', async (req, res) => {
   }
 });
 
+// 13. Job Status Route
+app.get('/api/job-status', async (req, res) => {
+  const jobId = req.query.id;
+  if (!jobId) return res.status(400).json({ error: 'Missing jobId' });
+  const status = await getJobStatus(jobId);
+  res.json({ success: true, job: status });
+});
+
+let isWorkerBusy = false;
+function startJobWorker() {
+  console.log('[Worker] ⚡ Autonomous cloud rendering worker activated.');
+  setInterval(async () => {
+    if (isWorkerBusy) return;
+    try {
+      const pendingJobs = await getPendingJobs();
+      if (!pendingJobs || pendingJobs.length === 0) return;
+
+      const job = pendingJobs[0];
+      isWorkerBusy = true;
+      console.log(`\n⚡ [Cloud Worker] Picking up queued job ${job.id} for user ${job.uid || 'Anonymous'}...`);
+      await updateJobStatus(job.id, { status: 'processing' });
+
+      const result = await generateSingleShort({
+        niche: job.niche,
+        voice: job.voice,
+        customTopic: job.customTopic,
+        uid: job.uid,
+        privacyStatus: job.privacyStatus || 'public',
+      });
+
+      await updateJobStatus(job.id, {
+        status: 'completed',
+        youtubeUrl: result.youtubeUrl,
+        videoUrl: result.videoUrl,
+        title: result.title,
+      });
+
+      console.log(`✅ [Cloud Worker] Finished job ${job.id}! Live URL: ${result.youtubeUrl || 'Draft saved'}`);
+    } catch (err) {
+      console.error('[Cloud Worker Error]:', err.message);
+    } finally {
+      isWorkerBusy = false;
+    }
+  }, 5000);
+}
+
 const PORT = process.env.PORT || 3500;
 if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
   app.listen(PORT, async () => {
@@ -540,7 +601,9 @@ if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
     console.log(`🖥️  AUTO SHORTS ADMIN STUDIO RUNNING AT: http://localhost:${PORT}`);
     console.log(`============================================================`);
     await syncScheduler();
+    startJobWorker();
   });
 }
 
 module.exports = app;
+

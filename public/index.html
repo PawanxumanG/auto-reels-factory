@@ -1549,14 +1549,60 @@
         });
 
         const data = await res.json();
-        progressBar.style.width = '100%';
         
+        if (data.jobId) {
+          statusText.innerText = '⚡ Autonomous engine is rendering & uploading to YouTube...';
+          progressBar.style.width = '80%';
+          
+          let pollAttempts = 0;
+          const pollInterval = setInterval(async () => {
+            pollAttempts++;
+            try {
+              const check = await fetch('/api/job-status?id=' + data.jobId);
+              const checkData = await check.json();
+              if (checkData.job && checkData.job.status === 'completed') {
+                clearInterval(pollInterval);
+                progressBar.style.width = '100%';
+                if (checkData.job.youtubeUrl) {
+                  statusText.innerText = '🎉 Uploaded Live to YouTube!';
+                  showToast('🎉 Short published Live to YouTube: ' + checkData.job.youtubeUrl, 'success', 6000);
+                } else {
+                  statusText.innerText = '✅ Short rendered and added to library!';
+                  showToast('✅ Short generated and added to library!', 'success');
+                }
+                setTimeout(() => {
+                  statusBox.classList.add('hidden');
+                  btn1.disabled = false;
+                  btn2.disabled = false;
+                  loadVideos();
+                }, 2000);
+              } else if (pollAttempts >= 15) {
+                clearInterval(pollInterval);
+                statusText.innerText = '✅ Generation in progress! Refreshing library...';
+                setTimeout(() => {
+                  statusBox.classList.add('hidden');
+                  btn1.disabled = false;
+                  btn2.disabled = false;
+                  loadVideos();
+                }, 2000);
+              }
+            } catch (err) {
+              if (pollAttempts >= 15) clearInterval(pollInterval);
+            }
+          }, 3000);
+          return;
+        }
+
+        progressBar.style.width = '100%';
         if (data.youtubeUrl) {
-          statusText.innerText = '🎉 Uploaded Live to YouTube! Refreshing feed...';
+          statusText.innerText = '🎉 Uploaded Live to YouTube!';
+          showToast('🎉 Short published Live to YouTube: ' + data.youtubeUrl, 'success', 6000);
         } else if (data.message) {
           statusText.innerText = '✅ ' + data.message;
+          showToast(data.message, 'info');
         } else {
           statusText.innerText = '✅ Short generated successfully!';
+          showToast('✅ Short generated successfully!', 'success');
         }
 
         setTimeout(() => {
@@ -1567,6 +1613,7 @@
         }, 2000);
       } catch (e) {
         statusText.innerText = '❌ Error: ' + e.message;
+        showToast('Error: ' + e.message, 'error');
         btn1.disabled = false;
         btn2.disabled = false;
       }

@@ -161,6 +161,54 @@ async function saveUserYouTubeAuth(userId, authData) {
   }
 }
 
+// Queue Management for Serverless <-> Worker Bridge
+async function createJob(jobData) {
+  try {
+    const id = 'job_' + Date.now();
+    const payload = {
+      id,
+      ...jobData,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+    await axios.put(`${DB_BASE}/shorts_factory/jobs/${id}.json`, payload);
+    return { success: true, id, job: payload };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+async function getPendingJobs() {
+  try {
+    const res = await axios.get(`${DB_BASE}/shorts_factory/jobs.json`);
+    if (!res.data) return [];
+    return Object.values(res.data).filter(j => j && j.status === 'pending');
+  } catch (err) {
+    return [];
+  }
+}
+
+async function updateJobStatus(id, updates) {
+  try {
+    await axios.patch(`${DB_BASE}/shorts_factory/jobs/${id}.json`, {
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    });
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+async function getJobStatus(id) {
+  try {
+    const res = await axios.get(`${DB_BASE}/shorts_factory/jobs/${id}.json`);
+    return res.data || null;
+  } catch (err) {
+    return null;
+  }
+}
+
 module.exports = {
   saveVideoRecord,
   getRecentTopics,
@@ -172,5 +220,10 @@ module.exports = {
   saveUserProfile,
   getUserYouTubeAuth,
   saveUserYouTubeAuth,
+  createJob,
+  getPendingJobs,
+  updateJobStatus,
+  getJobStatus,
   DEFAULT_SETTINGS,
 };
+
