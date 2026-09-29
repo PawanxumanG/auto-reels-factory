@@ -119,12 +119,6 @@ async function generateSingleShort(options = {}) {
       title: script.title,
       hook: script.hook,
       niche: targetNiche,
-      pexelsQuery: script.pexels_query,
-      youtubeUrl: null,
-      status: 'Cloud Scheduled',
-      privacyStatus: options.privacyStatus || 'public',
-    }, userId);
-
     return {
       success: true,
       isServerless: true,
@@ -132,7 +126,6 @@ async function generateSingleShort(options = {}) {
       title: script.title,
       hook: script.hook,
       message: '🚀 Viral Script crafted! Rendering & YouTube upload in progress...',
-      recordId: dbRecord.id,
     };
   }
 
