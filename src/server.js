@@ -15,6 +15,8 @@ const {
   deleteVideoRecord,
   getSettings,
   saveSettings,
+  getUserProfile,
+  saveUserProfile,
   DEFAULT_SETTINGS,
 } = require('./database');
 
@@ -34,13 +36,12 @@ let activeCronTasks = [];
  * Re-arm the local auto-posting cron scheduler based on user settings
  */
 async function syncScheduler() {
-  // Stop existing tasks
   activeCronTasks.forEach(task => task.stop());
   activeCronTasks = [];
 
   const settings = await getSettings();
   const timeSlots = settings.timeSlots || ['08:30', '17:30'];
-  console.log(`[Scheduler] Initializing local automation for ${timeSlots.length} daily time slots:`, timeSlots);
+  console.log(`[Scheduler] Initializing automation for ${timeSlots.length} daily time slots:`, timeSlots);
 
   timeSlots.forEach((slot, index) => {
     const parts = slot.trim().split(':');
@@ -82,6 +83,7 @@ async function syncScheduler() {
 async function generateSingleShort(options = {}) {
   const targetNiche = options.niche || config.DEFAULT_NICHE;
   const targetVoice = options.voice || config.DEFAULT_VOICE;
+  const userId = options.uid || options.userId || null;
 
   const runId = Date.now();
   if (!fs.existsSync(ASSETS_DIR)) fs.mkdirSync(ASSETS_DIR, { recursive: true });
@@ -91,7 +93,7 @@ async function generateSingleShort(options = {}) {
   const tempBg = path.join(ASSETS_DIR, `bg_${runId}.mp4`);
   const finalVideo = path.join(ASSETS_DIR, `Short_${runId}.mp4`);
 
-  console.log(`[Auto Pipeline] Generating Short for niche: ${targetNiche}...`);
+  console.log(`[Auto Pipeline] Generating Short for niche: ${targetNiche} (User: ${userId || 'Admin'})...`);
 
   // 1. Script
   const script = await generateScript(targetNiche, config.VIDEO_LANGUAGE, options.customTopic);
@@ -124,7 +126,7 @@ async function generateSingleShort(options = {}) {
     youtubeUrl: youtubeResult?.videoUrl || null,
     videoPath: finalVideo,
     privacyStatus: options.privacyStatus || 'public',
-  });
+  }, userId);
 
   // Clean temp
   [tempAudio, tempSub, tempBg, tempSub.replace(/\.vtt$/, '.srt')].forEach((f) => {
@@ -141,15 +143,20 @@ async function generateSingleShort(options = {}) {
   };
 }
 
-// 1. Get Stats
+// 1. Get Stats (User Scoped or Admin)
 app.get('/api/stats', async (req, res) => {
+  const userId = req.query.uid || null;
   try {
-    const dbRes = await axios.get(`${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/videos.json`).catch(() => ({ data: {} }));
+    const dbPath = userId
+      ? `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/users/${userId}/videos.json`
+      : `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/videos.json`;
+
+    const dbRes = await axios.get(dbPath).catch(() => ({ data: {} }));
     const videos = dbRes.data ? Object.values(dbRes.data) : [];
     
     const youtubeVideos = videos.filter((v) => Boolean(v.youtubeUrl)).length;
     const drafts = videos.length - youtubeVideos;
-    const settings = await getSettings();
+    const settings = await getSettings(userId);
 
     res.json({
       totalVideos: videos.length,
@@ -168,8 +175,13 @@ app.get('/api/stats', async (req, res) => {
 
 // 2. Get Video History
 app.get('/api/videos', async (req, res) => {
+  const userId = req.query.uid || null;
   try {
-    const dbRes = await axios.get(`${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/videos.json`).catch(() => ({ data: {} }));
+    const dbPath = userId
+      ? `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/users/${userId}/videos.json`
+      : `${config.FIREBASE_DB_URL.replace(/\/+$/, '')}/shorts_factory/videos.json`;
+
+    const dbRes = await axios.get(dbPath).catch(() => ({ data: {} }));
     if (!dbRes.data) return res.json({ videos: [] });
 
     const videos = Object.keys(dbRes.data).map((k) => {
@@ -190,8 +202,9 @@ app.get('/api/videos', async (req, res) => {
 
 // 3. Get Settings
 app.get('/api/settings', async (req, res) => {
+  const userId = req.query.uid || null;
   try {
-    const settings = await getSettings();
+    const settings = await getSettings(userId);
     res.json(settings);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -200,19 +213,36 @@ app.get('/api/settings', async (req, res) => {
 
 // 4. Save Settings
 app.post('/api/settings', async (req, res) => {
+  const userId = req.body.uid || null;
   try {
-    const result = await saveSettings(req.body);
-    await syncScheduler();
+    const result = await saveSettings(req.body, userId);
+    if (!userId) await syncScheduler();
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// 5. Generate Single Short
+// 5. User Profile API
+app.get('/api/user-profile', async (req, res) => {
+  const userId = req.query.uid;
+  if (!userId) return res.json({ profile: null });
+  const profile = await getUserProfile(userId);
+  res.json({ profile });
+});
+
+app.post('/api/user-profile', async (req, res) => {
+  const { uid, profile } = req.body;
+  if (!uid) return res.status(400).json({ error: 'Missing uid' });
+  const result = await saveUserProfile(uid, profile);
+  res.json(result);
+});
+
+// 6. Generate Single Short
 app.post('/api/generate', async (req, res) => {
+  const userId = req.body.uid || null;
   try {
-    const settings = await getSettings();
+    const settings = await getSettings(userId);
     const result = await generateSingleShort({
       ...settings,
       ...req.body,
@@ -224,10 +254,11 @@ app.post('/api/generate', async (req, res) => {
   }
 });
 
-// 6. Batch Generation
+// 7. Batch Generation
 app.post('/api/trigger-batch', async (req, res) => {
+  const userId = req.body.uid || null;
   const count = Math.min(Math.max(parseInt(req.body.count, 10) || 2, 1), 6);
-  const settings = await getSettings();
+  const settings = await getSettings(userId);
   const niches = settings.nicheRotation || ['psychology', 'facts', 'cricket', 'motivation'];
 
   res.json({ success: true, message: `Started batch generation for ${count} videos in background.` });
@@ -241,6 +272,7 @@ app.post('/api/trigger-batch', async (req, res) => {
         await generateSingleShort({
           ...settings,
           niche,
+          uid: userId,
         });
       } catch (e) {
         console.error(`[Batch Error on #${i + 1}]:`, e.message);
@@ -250,13 +282,13 @@ app.post('/api/trigger-batch', async (req, res) => {
   })();
 });
 
-// 7. Upload Local Draft to YouTube
+// 8. Upload Local Draft to YouTube
 app.post('/api/upload-draft', async (req, res) => {
-  const { id, title, hook, niche, videoPath } = req.body;
+  const { id, title, hook, niche, videoPath, uid } = req.body;
   if (!id) return res.status(400).json({ error: 'Missing video ID' });
 
   try {
-    const settings = await getSettings();
+    const settings = await getSettings(uid);
     const filePath = videoPath || path.join(ASSETS_DIR, `Short_${id}.mp4`);
     let targetFile = filePath;
 
@@ -284,7 +316,7 @@ app.post('/api/upload-draft', async (req, res) => {
     });
 
     if (ytResult && ytResult.videoUrl) {
-      await updateVideoRecord(id, { youtubeUrl: ytResult.videoUrl });
+      await updateVideoRecord(id, { youtubeUrl: ytResult.videoUrl }, uid);
       return res.json({ success: true, youtubeUrl: ytResult.videoUrl });
     } else {
       return res.status(500).json({ error: 'YouTube upload failed. Check API quota.' });
@@ -295,13 +327,13 @@ app.post('/api/upload-draft', async (req, res) => {
   }
 });
 
-// 8. Delete Video
+// 9. Delete Video
 app.post('/api/delete-video', async (req, res) => {
-  const { id, videoPath } = req.body;
+  const { id, videoPath, uid } = req.body;
   if (!id) return res.status(400).json({ error: 'Missing video ID' });
 
   try {
-    await deleteVideoRecord(id);
+    await deleteVideoRecord(id, uid);
     if (videoPath && fs.existsSync(videoPath)) {
       try { fs.unlinkSync(videoPath); } catch {}
     }
