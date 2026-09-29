@@ -72,9 +72,30 @@
     ::-webkit-scrollbar-thumb:hover {
       background: #ec4899;
     }
+    @keyframes toastSlideIn {
+      from { transform: translateY(-20px) scale(0.95); opacity: 0; }
+      to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    @keyframes toastFadeOut {
+      from { transform: translateY(0) scale(1); opacity: 1; }
+      to { transform: translateY(-15px) scale(0.95); opacity: 0; }
+    }
+    @keyframes toastProgress {
+      from { width: 100%; }
+      to { width: 0%; }
+    }
+    .toast-animate-in {
+      animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .toast-animate-out {
+      animation: toastFadeOut 0.25s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col antialiased selection:bg-pink-500 selection:text-white">
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed top-5 right-5 z-[999999] flex flex-col space-y-3 pointer-events-none max-w-sm sm:max-w-md w-full px-4 sm:px-0"></div>
 
   <!-- Top Navigation Header -->
   <header class="glass sticky top-0 z-40 px-6 py-4 flex items-center justify-between border-b border-gray-800/80">
@@ -782,6 +803,59 @@
     let currentSettings = {};
     let isShowingLanding = true;
 
+    // Toast Notification System
+    function showToast(message, type = 'success', duration = 4000) {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      toast.className = 'relative overflow-hidden pointer-events-auto p-4 rounded-2xl border backdrop-blur-2xl shadow-2xl flex items-start space-x-3.5 transition-all toast-animate-in';
+
+      let icon = '<i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>';
+      let borderBg = 'bg-[#0f172a]/95 border-emerald-500/30 text-emerald-100 shadow-[0_10px_30px_-5px_rgba(16,185,129,0.3)]';
+      let title = 'Success';
+      let barColor = 'bg-emerald-500';
+
+      if (type === 'error') {
+        icon = '<i class="fa-solid fa-circle-exclamation text-rose-400 text-lg"></i>';
+        borderBg = 'bg-[#0f172a]/95 border-rose-500/30 text-rose-100 shadow-[0_10px_30px_-5px_rgba(244,63,94,0.3)]';
+        title = 'Notice';
+        barColor = 'bg-rose-500';
+      } else if (type === 'warning') {
+        icon = '<i class="fa-solid fa-triangle-exclamation text-amber-400 text-lg"></i>';
+        borderBg = 'bg-[#0f172a]/95 border-amber-500/30 text-amber-100 shadow-[0_10px_30px_-5px_rgba(245,158,11,0.3)]';
+        title = 'Attention';
+        barColor = 'bg-amber-500';
+      } else if (type === 'info') {
+        icon = '<i class="fa-solid fa-bolt text-pink-400 text-lg"></i>';
+        borderBg = 'bg-[#0f172a]/95 border-pink-500/30 text-pink-100 shadow-[0_10px_30px_-5px_rgba(236,72,153,0.3)]';
+        title = 'YouShorts AI';
+        barColor = 'bg-pink-500';
+      }
+
+      toast.classList.add(...borderBg.split(' '));
+
+      toast.innerHTML = `
+        <div class="flex-shrink-0 mt-0.5 p-2 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">${icon}</div>
+        <div class="flex-1 text-xs pr-2 min-w-0">
+          <div class="font-bold text-white text-sm leading-snug mb-0.5 tracking-wide">${title}</div>
+          <div class="text-gray-300 leading-relaxed break-words font-medium">${message}</div>
+        </div>
+        <button class="flex-shrink-0 text-gray-400 hover:text-white text-xs p-1.5 rounded-lg hover:bg-white/10 transition-colors" onclick="this.closest('.toast-animate-in')?.remove()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div class="absolute bottom-0 left-0 h-0.5 ${barColor} opacity-70" style="animation: toastProgress ${duration}ms linear forwards;"></div>
+      `;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.remove('toast-animate-in');
+        toast.classList.add('toast-animate-out');
+        setTimeout(() => toast.remove(), 260);
+      }, duration);
+    }
+
     function getUidQuery() {
       return currentUser && currentUser.uid ? `?uid=${currentUser.uid}` : '';
     }
@@ -789,7 +863,7 @@
     // Smart Channel Name / URL Parser
     function parseChannelInput(input) {
       if (!input) return { handle: '@Creator', name: 'Creator', url: 'https://youtube.com' };
-      let str = input.trim();
+      let str = input.trim().replace(/^@+/, '@');
       let handle = '';
       let name = str;
 
@@ -810,6 +884,9 @@
         handle = '@' + str.replace(/\s+/g, '');
         name = str;
       }
+
+      // Ensure no double @@
+      handle = handle.replace(/^@+/, '@');
 
       return {
         handle,
@@ -845,7 +922,7 @@
         if (event.data.code) {
           await exchangeOAuthCode(event.data.code);
         } else if (event.data.error) {
-          alert('OAuth Error: ' + event.data.error);
+          showToast('OAuth Cancelled: ' + event.data.error, 'warning');
         }
       }
     });
@@ -865,17 +942,19 @@
         const result = await exchangeRes.json();
         if (result.success && result.channel) {
           currentUser.channel = result.channel;
-          currentUser.displayName = result.channel.handle || result.channel.title;
+          const cleanHandle = (result.channel.handle || result.channel.title || 'Creator').replace(/^@+/, '@');
+          currentUser.displayName = cleanHandle;
+          if (result.channel.avatar) currentUser.avatar = result.channel.avatar;
           localStorage.setItem('youshorts_user', JSON.stringify(currentUser));
           updateChannelBanner();
           closeChannelConnectModal();
           loadStats();
-          alert(`🎉 Success! YouTube Channel "${result.channel.title}" (@${result.channel.handle || 'Shorts'}) authorized for 24/7 direct uploads!`);
+          showToast(`🎉 YouTube Channel "${result.channel.title}" (${cleanHandle}) authorized for 24/7 direct uploads!`, 'success', 5000);
         } else {
-          alert("Authentication note: " + (result.error || "Token stored"));
+          showToast(result.error || "Token stored", 'info');
         }
       } catch (err) {
-        alert("Exchange error: " + err.message);
+        showToast("Exchange error: " + err.message, 'error');
       }
     }
 
@@ -887,10 +966,10 @@
         if (data.url) {
           oauthWindow = window.open(data.url, 'Google OAuth', 'width=600,height=720');
         } else {
-          alert("Could not initialize Google OAuth. Please check client credentials.");
+          showToast("Could not initialize Google OAuth. Please check client credentials.", 'error');
         }
       } catch (err) {
-        alert("OAuth error: " + err.message);
+        showToast("OAuth error: " + err.message, 'error');
       }
     }
 
@@ -976,7 +1055,7 @@
       const niche = document.getElementById('inputChannelNiche').value;
 
       if (!rawInput) {
-        alert('Please enter your YouTube Channel Name or Link!');
+        showToast('Please enter your YouTube Channel Name or Link!', 'warning');
         return;
       }
 
@@ -1002,13 +1081,13 @@
 
       closeChannelConnectModal();
       updateChannelBanner();
-      alert(`🎉 Channel Linked: ${parsed.handle}!`);
+      showToast(`🎉 Channel Linked: ${parsed.handle}!`, 'success');
     }
 
     async function saveCustomRefreshToken() {
       const token = document.getElementById('inputCustomToken').value.trim();
       if (!token) {
-        alert('Please paste your Google OAuth Refresh Token!');
+        showToast('Please paste your Google OAuth Refresh Token!', 'warning');
         return;
       }
       if (!currentUser) return;
@@ -1025,17 +1104,19 @@
         const data = await res.json();
         if (data.success && data.channel) {
           currentUser.channel = data.channel;
-          currentUser.displayName = data.channel.handle || data.channel.title;
+          const cleanHandle = (data.channel.handle || data.channel.title || 'Creator').replace(/^@+/, '@');
+          currentUser.displayName = cleanHandle;
+          if (data.channel.avatar) currentUser.avatar = data.channel.avatar;
           localStorage.setItem('youshorts_user', JSON.stringify(currentUser));
           updateChannelBanner();
           closeChannelConnectModal();
           loadStats();
-          alert(`🎉 Channel "${data.channel.title}" successfully authorized with Refresh Token!`);
+          showToast(`🎉 Channel "${data.channel.title}" authorized with Refresh Token!`, 'success');
         } else {
-          alert('Token note: ' + (data.error || 'Token saved'));
+          showToast(data.error || 'Token saved', 'info');
         }
       } catch (err) {
-        alert('Error: ' + err.message);
+        showToast('Error: ' + err.message, 'error');
       }
     }
 
@@ -1214,13 +1295,14 @@
         
         const msg = document.getElementById('saveStatusMsg');
         msg.classList.remove('hidden');
+        showToast('Settings saved successfully!', 'success');
         setTimeout(() => {
           msg.classList.add('hidden');
           closeSettingsModal();
           loadStats();
-        }, 1200);
+        }, 1000);
       } catch (err) {
-        alert('Error saving settings: ' + err.message);
+        showToast('Error saving settings: ' + err.message, 'error');
       }
     }
 
@@ -1361,7 +1443,7 @@
       const hook = decodeURIComponent(encodedHook);
       const textToCopy = `📌 Title:\n${title}\n\n🔥 Hook:\n"${hook}"\n\n🏷️ Tags:\n#shorts #youtubeshorts #viral #trending #${niche || 'facts'} #mindset`;
       navigator.clipboard.writeText(textToCopy).then(() => {
-        alert('📋 Copied YouTube Title, Hook & Tags to clipboard!');
+        showToast('📋 Copied YouTube Title, Hook & Tags to clipboard!', 'success');
       }).catch(() => {
         prompt('Copy your SEO metadata:', textToCopy);
       });
@@ -1371,6 +1453,7 @@
       if (!confirm('🚀 Publish this draft directly to your YouTube Channel as a Short?')) return;
 
       try {
+        showToast('Uploading short to YouTube in background...', 'info', 5000);
         const res = await fetch('/api/upload-draft', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1386,13 +1469,13 @@
 
         const data = await res.json();
         if (data.success && data.youtubeUrl) {
-          alert('🎉 Upload Successful!\nLive URL: ' + data.youtubeUrl);
+          showToast(`🎉 Upload Successful! Live on YouTube: ${data.youtubeUrl}`, 'success', 6000);
           loadVideos();
         } else {
-          alert('Upload note: ' + (data.error || 'Check channel authorization'));
+          showToast('Upload note: ' + (data.error || 'Check channel authorization'), 'warning', 5000);
         }
       } catch (err) {
-        alert('Network error: ' + err.message);
+        showToast('Network error: ' + err.message, 'error');
       }
     }
 
@@ -1405,6 +1488,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id, videoPath, uid: currentUser ? currentUser.uid : null })
         });
+        showToast('Video record deleted', 'info');
         loadVideos();
       } catch (err) {
         console.error('Delete error:', err);
@@ -1419,9 +1503,9 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ count, uid: currentUser ? currentUser.uid : null })
         });
-        alert(`Batch generation of ${count} videos started in background! Refresh in 1-2 minutes to see them.`);
+        showToast(`🚀 Batch generation of ${count} videos started in background!`, 'info', 6000);
       } catch (err) {
-        alert('Batch error: ' + err.message);
+        showToast('Batch error: ' + err.message, 'error');
       }
     }
 
