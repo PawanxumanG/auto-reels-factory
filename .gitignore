@@ -1,0 +1,7 @@
+node_modules/
+assets/*.mp4
+assets/*.mp3
+assets/*.vtt
+assets/*.srt
+.env
+.DS_Store

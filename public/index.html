@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto Shorts Studio & Admin Control Center</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              500: '#ec4899',
+              600: '#db2777',
+              700: '#be185d',
+            },
+            dark: {
+              950: '#07070c',
+              900: '#0c0d14',
+              800: '#141622',
+              700: '#1c1f30',
+              600: '#282c42',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #07070c;
+      color: #f1f5f9;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    }
+    .glass {
+      background: rgba(12, 13, 20, 0.8);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card {
+      background: rgba(20, 22, 34, 0.7);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #3b82f6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+  <!-- Top Navigation Header -->
+  <header class="glass sticky top-0 z-40 px-6 py-4 flex items-center justify-between border-b border-gray-800/80">
+    <div class="flex items-center space-x-3.5">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-500 via-purple-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-pink-500/20">
+        <i class="fa-solid fa-bolt text-white text-lg"></i>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <h1 class="font-bold text-lg leading-tight gradient-text">Auto Shorts Studio</h1>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30 uppercase tracking-wider">ADMIN</span>
+        </div>
+        <p class="text-xs text-gray-400">Autonomous 24/7 AI Reels & YouTube Shorts Engine</p>
+      </div>
+    </div>
+    
+    <div class="flex items-center space-x-3">
+      <button onclick="openSettingsModal()" class="px-3.5 py-2 rounded-xl bg-dark-700 hover:bg-dark-600 border border-gray-700 text-gray-200 text-xs font-semibold flex items-center space-x-2 transition-all shadow-sm">
+        <i class="fa-solid fa-gear text-pink-400"></i>
+        <span>Schedule & Settings</span>
+      </button>
+
+      <button onclick="triggerNewShort()" id="headerGenBtn" class="px-4 py-2 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white text-xs font-bold shadow-lg shadow-pink-500/25 transition-all flex items-center space-x-2 active:scale-95">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <span>Generate Short</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Body -->
+  <main class="flex-1 p-6 max-w-7xl mx-auto w-full space-y-7">
+    <!-- Top Stats Overview -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div class="glass-card p-5 rounded-2xl relative overflow-hidden group hover:border-pink-500/30 transition-all">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Generated</p>
+          <div class="w-9 h-9 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center">
+            <i class="fa-solid fa-film"></i>
+          </div>
+        </div>
+        <h3 id="statTotal" class="text-3xl font-extrabold mt-2 text-white">0</h3>
+        <p class="text-xs text-gray-500 mt-1">1080x1920 HD Shorts</p>
+      </div>
+
+      <div class="glass-card p-5 rounded-2xl relative overflow-hidden group hover:border-red-500/30 transition-all">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">YouTube Live</p>
+          <div class="w-9 h-9 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center">
+            <i class="fa-brands fa-youtube text-lg"></i>
+          </div>
+        </div>
+        <h3 id="statYouTube" class="text-3xl font-extrabold mt-2 text-red-400">0</h3>
+        <p class="text-xs text-gray-500 mt-1">Published to Channel</p>
+      </div>
+
+      <div class="glass-card p-5 rounded-2xl relative overflow-hidden group hover:border-violet-500/30 transition-all">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Daily Schedule</p>
+          <div class="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center">
+            <i class="fa-solid fa-calendar-day"></i>
+          </div>
+        </div>
+        <h3 id="statDailyCount" class="text-2xl font-bold mt-2 text-purple-300">2 Videos / Day</h3>
+        <p id="statTimeSlotsPreview" class="text-xs text-gray-400 mt-1 truncate">8:30 AM, 5:30 PM</p>
+      </div>
+
+      <div class="glass-card p-5 rounded-2xl relative overflow-hidden group hover:border-emerald-500/30 transition-all">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Upload Strategy</p>
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+            <i class="fa-solid fa-cloud-bolt"></i>
+          </div>
+        </div>
+        <h3 id="statPublishMode" class="text-xl font-bold mt-2 text-emerald-400 flex items-center space-x-1.5">
+          <span>Auto-Public</span>
+          <i class="fa-solid fa-circle-check text-xs"></i>
+        </h3>
+        <p class="text-xs text-gray-500 mt-1">Direct to @VishnuTester</p>
+      </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <!-- Studio Control Panel -->
+      <div class="glass-card p-6 rounded-2xl lg:col-span-1 space-y-5 border border-gray-800">
+        <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+          <div class="flex items-center space-x-2 text-pink-400 font-bold text-sm">
+            <i class="fa-solid fa-sliders"></i>
+            <span>Instant Generator Studio</span>
+          </div>
+          <span class="text-[11px] text-gray-400 bg-dark-700 px-2 py-0.5 rounded-md">100% Free</span>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-300 mb-1.5">Select Viral Niche / Theme</label>
+          <select id="nicheSelect" class="w-full bg-dark-800 border border-gray-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors">
+            <option value="psychology">🧠 Human Psychology & Dark Secrets</option>
+            <option value="facts">🌊 Terrifying Facts & Deep Space Mysteries</option>
+            <option value="cricket">🏏 Shocking Cricket Records & Legends</option>
+            <option value="motivation">🦁 Stoic Motivation & The 1% Rule</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-300 mb-1.5">Voiceover Model</label>
+          <select id="voiceSelect" class="w-full bg-dark-800 border border-gray-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors">
+            <option value="hi-IN-MadhurNeural">🇮🇳 Hindi Male (Madhur - Dynamic & Energetic)</option>
+            <option value="hi-IN-SwaraNeural">🇮🇳 Hindi Female (Swara - Clean & Clear)</option>
+            <option value="en-US-ChristopherNeural">🇺🇸 English Male (Christopher - Deep & Authoritative)</option>
+            <option value="en-US-GuyNeural">🇺🇸 English Male (Guy - Casual)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-300 mb-1.5">Custom Topic / Prompt (Optional)</label>
+          <input type="text" id="customTopicInput" placeholder="e.g., 3 dark secrets about body language" class="w-full bg-dark-800 border border-gray-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-pink-500 transition-colors">
+          <p class="text-[11px] text-gray-500 mt-1">Leave empty for Groq AI trending auto-generation.</p>
+        </div>
+
+        <div class="pt-2 flex flex-col gap-2.5">
+          <button onclick="triggerNewShort()" id="studioGenBtn" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold text-sm shadow-lg shadow-pink-500/20 transition-all flex items-center justify-center space-x-2 active:scale-95">
+            <i class="fa-solid fa-play"></i>
+            <span>Generate & Publish 1 Short</span>
+          </button>
+
+          <button onclick="triggerBatch(2)" class="w-full py-2.5 rounded-xl bg-dark-700 hover:bg-dark-600 border border-gray-700 text-gray-200 text-xs font-semibold flex items-center justify-center space-x-2 transition-all">
+            <i class="fa-solid fa-layer-group text-purple-400"></i>
+            <span>Generate Batch of 2 Videos</span>
+          </button>
+        </div>
+
+        <!-- Generation Progress Bar Box -->
+        <div id="genStatus" class="hidden p-4 rounded-xl bg-gray-900/90 border border-pink-500/30 text-xs space-y-3">
+          <div class="flex items-center justify-between text-gray-200">
+            <span id="genStatusText" class="font-medium">🧠 AI crafting viral script...</span>
+            <i class="fa-solid fa-spinner fa-spin text-pink-400"></i>
+          </div>
+          <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+            <div id="genProgressBar" class="bg-gradient-to-r from-pink-500 to-purple-500 h-full w-1/4 transition-all duration-500"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Video Library & History -->
+      <div class="glass-card p-6 rounded-2xl lg:col-span-2 space-y-5 border border-gray-800">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-800 pb-3">
+          <div class="flex items-center space-x-2 text-white font-bold text-sm">
+            <i class="fa-solid fa-photo-film text-pink-400"></i>
+            <span>Video Library & Shorts Feed</span>
+          </div>
+
+          <!-- Filter Tabs -->
+          <div class="flex items-center space-x-2 text-xs">
+            <button onclick="setFilter('all')" id="tab-all" class="px-3 py-1.5 rounded-lg bg-pink-500 text-white font-semibold">All (<span id="countAll">0</span>)</button>
+            <button onclick="setFilter('youtube')" id="tab-youtube" class="px-3 py-1.5 rounded-lg bg-dark-700 text-gray-400 hover:text-white font-semibold">Live on YT (<span id="countYT">0</span>)</button>
+            <button onclick="setFilter('draft')" id="tab-draft" class="px-3 py-1.5 rounded-lg bg-dark-700 text-gray-400 hover:text-white font-semibold">Drafts (<span id="countDraft">0</span>)</button>
+            <button onclick="loadVideos()" class="p-1.5 text-gray-400 hover:text-white ml-2" title="Refresh">
+              <i class="fa-solid fa-rotate"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="videoGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[580px] overflow-y-auto pr-1">
+          <div class="p-8 text-center text-gray-500 col-span-2">
+            <i class="fa-solid fa-film text-3xl mb-2 text-gray-600 animate-pulse"></i>
+            <p>Loading video library...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Admin & Schedule Settings Modal -->
+  <div id="settingsModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="glass-card max-w-2xl w-full rounded-2xl overflow-hidden border border-gray-700 shadow-2xl relative max-h-[90vh] flex flex-col">
+      <div class="p-5 border-b border-gray-800 flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-lg bg-pink-500/20 text-pink-400 flex items-center justify-center">
+            <i class="fa-solid fa-gear"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-base">Automation & Schedule Admin</h3>
+            <p class="text-xs text-gray-400">Configure daily upload volume, posting time slots & monetization</p>
+          </div>
+        </div>
+        <button onclick="closeSettingsModal()" class="w-8 h-8 rounded-full bg-dark-700 text-gray-400 hover:text-white flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
+        <!-- 1. Daily Upload Volume & Schedule -->
+        <div class="space-y-3">
+          <h4 class="font-bold text-pink-400 text-sm flex items-center space-x-2">
+            <i class="fa-solid fa-clock"></i>
+            <span>Upload Volume & Posting Schedule</span>
+          </h4>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block font-semibold text-gray-300 mb-1">Daily Upload Count</label>
+              <select id="cfgDailyCount" onchange="updateTimeSlotsForCount(this.value)" class="w-full bg-dark-800 border border-gray-700 rounded-xl p-2.5 text-white">
+                <option value="1">1 Short per day</option>
+                <option value="2">2 Shorts per day (Recommended)</option>
+                <option value="3">3 Shorts per day</option>
+                <option value="4">4 Shorts per day</option>
+                <option value="6">6 Shorts per day (Max Free Quota)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-semibold text-gray-300 mb-1">YouTube Privacy Mode</label>
+              <select id="cfgPrivacy" class="w-full bg-dark-800 border border-gray-700 rounded-xl p-2.5 text-white">
+                <option value="public">🌍 Public (Instant Viral Reach)</option>
+                <option value="unlisted">🔗 Unlisted</option>
+                <option value="private">🔒 Private (Testing)</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-gray-300 mb-1">Posting Time Slots (IST 24h format, comma separated)</label>
+            <input type="text" id="cfgTimeSlots" placeholder="08:30, 17:30" class="w-full bg-dark-800 border border-gray-700 rounded-xl p-2.5 text-white">
+            <div class="flex items-center space-x-2 mt-1.5">
+              <span class="text-gray-500">Quick Presets:</span>
+              <button onclick="setTimePreset(['08:30', '17:30'])" class="px-2 py-0.5 bg-dark-700 rounded hover:bg-dark-600 text-gray-300">2x (8:30 AM, 5:30 PM)</button>
+              <button onclick="setTimePreset(['08:30', '13:00', '17:30', '21:00'])" class="px-2 py-0.5 bg-dark-700 rounded hover:bg-dark-600 text-gray-300">4x Prime</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Auto-Publish Strategy -->
+        <div class="space-y-3 border-t border-gray-800 pt-4">
+          <h4 class="font-bold text-purple-400 text-sm flex items-center space-x-2">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span>Publishing Mode</span>
+          </h4>
+
+          <div class="flex items-center justify-between p-3.5 rounded-xl bg-dark-800/80 border border-gray-700">
+            <div>
+              <p class="font-semibold text-white">Auto-Publish to YouTube Directly</p>
+              <p class="text-gray-400 text-[11px]">When enabled, new videos upload directly to your channel without manual confirmation.</p>
+            </div>
+            <input type="checkbox" id="cfgAutoPublish" class="w-5 h-5 accent-pink-500 rounded cursor-pointer">
+          </div>
+        </div>
+
+        <!-- 3. Niche Rotation -->
+        <div class="space-y-3 border-t border-gray-800 pt-4">
+          <h4 class="font-bold text-blue-400 text-sm flex items-center space-x-2">
+            <i class="fa-solid fa-shuffle"></i>
+            <span>Active Niche Rotation</span>
+          </h4>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center space-x-2 p-2.5 rounded-lg bg-dark-800 border border-gray-700 cursor-pointer">
+              <input type="checkbox" value="psychology" class="niche-check accent-pink-500">
+              <span class="text-gray-200">🧠 Psychology & Dark Secrets</span>
+            </label>
+            <label class="flex items-center space-x-2 p-2.5 rounded-lg bg-dark-800 border border-gray-700 cursor-pointer">
+              <input type="checkbox" value="facts" class="niche-check accent-pink-500">
+              <span class="text-gray-200">🌊 Terrifying Facts & Space</span>
+            </label>
+            <label class="flex items-center space-x-2 p-2.5 rounded-lg bg-dark-800 border border-gray-700 cursor-pointer">
+              <input type="checkbox" value="cricket" class="niche-check accent-pink-500">
+              <span class="text-gray-200">🏏 Cricket Records & Legends</span>
+            </label>
+            <label class="flex items-center space-x-2 p-2.5 rounded-lg bg-dark-800 border border-gray-700 cursor-pointer">
+              <input type="checkbox" value="motivation" class="niche-check accent-pink-500">
+              <span class="text-gray-200">🦁 Stoic Motivation & 1% Rule</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 4. SEO & Engagement Settings -->
+        <div class="space-y-3 border-t border-gray-800 pt-4">
+          <h4 class="font-bold text-emerald-400 text-sm flex items-center space-x-2">
+            <i class="fa-solid fa-tags"></i>
+            <span>SEO & Viewer Engagement Setup</span>
+          </h4>
+
+          <div>
+            <label class="block font-semibold text-gray-300 mb-1">Pinned Comment & Engagement Question</label>
+            <input type="text" id="cfgPinnedComment" placeholder="👇 Which fact surprised you most? Drop your thoughts below!" class="w-full bg-dark-800 border border-gray-700 rounded-xl p-2.5 text-white">
+          </div>
+
+          <div>
+            <label class="block font-semibold text-gray-300 mb-1">Always-Included Viral Tags</label>
+            <input type="text" id="cfgCustomTags" placeholder="#shorts #viral #trending #shortsfeed #facts #psychology" class="w-full bg-dark-800 border border-gray-700 rounded-xl p-2.5 text-white">
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 border-t border-gray-800 flex items-center justify-between bg-dark-900">
+        <span id="saveStatusMsg" class="text-xs text-emerald-400 font-semibold hidden">✅ Settings saved & scheduler re-armed!</span>
+        <div class="flex items-center space-x-2 ml-auto">
+          <button onclick="closeSettingsModal()" class="px-4 py-2 rounded-xl bg-dark-700 hover:bg-dark-600 text-gray-300 text-xs font-semibold">Cancel</button>
+          <button onclick="saveAdminSettings()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white text-xs font-bold shadow-lg shadow-pink-500/20">Save & Apply Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Video Player Modal -->
+  <div id="playerModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="glass-card max-w-sm w-full rounded-2xl overflow-hidden border border-gray-700 shadow-2xl relative">
+      <button onclick="closeModal()" class="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-black/90">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div class="aspect-[9/16] bg-black relative flex items-center justify-center">
+        <video id="modalVideo" controls autoplay loop class="w-full h-full object-contain"></video>
+      </div>
+      <div class="p-4 space-y-2.5">
+        <h4 id="modalTitle" class="font-bold text-white text-sm leading-snug"></h4>
+        <p id="modalHook" class="text-xs text-gray-400 italic"></p>
+        <div id="modalLinks" class="pt-2 flex items-center space-x-2"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentVideos = [];
+    let currentFilter = 'all';
+    let currentSettings = {};
+
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+        document.getElementById('statTotal').innerText = data.totalVideos || 0;
+        document.getElementById('statYouTube').innerText = data.youtubeVideos || 0;
+        document.getElementById('statDailyCount').innerText = (data.dailyUploadCount || 2) + ' Videos / Day';
+        if (data.timeSlots && data.timeSlots.length > 0) {
+          document.getElementById('statTimeSlotsPreview').innerText = data.timeSlots.join(', ');
+        }
+      } catch (e) {
+        console.error('Stats error:', e);
+      }
+    }
+
+    async function loadSettings() {
+      try {
+        const res = await fetch('/api/settings');
+        currentSettings = await res.json();
+        
+        document.getElementById('cfgDailyCount').value = currentSettings.dailyUploadCount || 2;
+        document.getElementById('cfgPrivacy').value = currentSettings.privacyStatus || 'public';
+        document.getElementById('cfgTimeSlots').value = (currentSettings.timeSlots || ['08:30', '17:30']).join(', ');
+        document.getElementById('cfgAutoPublish').checked = currentSettings.autoPublish !== false;
+        document.getElementById('cfgPinnedComment').value = currentSettings.pinnedComment || '';
+        document.getElementById('cfgCustomTags').value = currentSettings.customTags || '';
+
+        const niches = currentSettings.nicheRotation || ['psychology', 'facts', 'cricket', 'motivation'];
+        document.querySelectorAll('.niche-check').forEach(cb => {
+          cb.checked = niches.includes(cb.value);
+        });
+
+        document.getElementById('statPublishMode').innerHTML = `
+          <span>${currentSettings.autoPublish !== false ? 'Auto-Public' : 'Save as Draft'}</span>
+          <i class="fa-solid fa-circle-check text-xs"></i>
+        `;
+      } catch (e) {
+        console.error('Settings error:', e);
+      }
+    }
+
+    function updateTimeSlotsForCount(count) {
+      const c = parseInt(count, 10);
+      let slots = ['08:30'];
+      if (c === 2) slots = ['08:30', '17:30'];
+      if (c === 3) slots = ['08:30', '13:00', '18:00'];
+      if (c === 4) slots = ['08:30', '13:00', '17:30', '21:00'];
+      if (c === 6) slots = ['08:00', '11:00', '14:00', '17:00', '19:30', '22:00'];
+      document.getElementById('cfgTimeSlots').value = slots.join(', ');
+    }
+
+    function setTimePreset(slots) {
+      document.getElementById('cfgTimeSlots').value = slots.join(', ');
+      document.getElementById('cfgDailyCount').value = slots.length;
+    }
+
+    async function saveAdminSettings() {
+      const dailyCount = parseInt(document.getElementById('cfgDailyCount').value, 10);
+      const privacyStatus = document.getElementById('cfgPrivacy').value;
+      const rawSlots = document.getElementById('cfgTimeSlots').value;
+      const timeSlots = rawSlots.split(',').map(s => s.trim()).filter(Boolean);
+      const autoPublish = document.getElementById('cfgAutoPublish').checked;
+      const pinnedComment = document.getElementById('cfgPinnedComment').value;
+      const customTags = document.getElementById('cfgCustomTags').value;
+
+      const checkedNiches = Array.from(document.querySelectorAll('.niche-check:checked')).map(cb => cb.value);
+
+      const payload = {
+        dailyUploadCount: dailyCount,
+        privacyStatus,
+        timeSlots,
+        autoPublish,
+        pinnedComment,
+        customTags,
+        nicheRotation: checkedNiches.length > 0 ? checkedNiches : ['psychology', 'facts'],
+      };
+
+      try {
+        const res = await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        
+        const msg = document.getElementById('saveStatusMsg');
+        msg.classList.remove('hidden');
+        setTimeout(() => {
+          msg.classList.add('hidden');
+          closeSettingsModal();
+          loadStats();
+        }, 1500);
+      } catch (err) {
+        alert('Error saving settings: ' + err.message);
+      }
+    }
+
+    function openSettingsModal() {
+      loadSettings();
+      document.getElementById('settingsModal').classList.remove('hidden');
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').classList.add('hidden');
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      ['all', 'youtube', 'draft'].forEach(f => {
+        const tab = document.getElementById('tab-' + f);
+        if (f === filter) {
+          tab.className = 'px-3 py-1.5 rounded-lg bg-pink-500 text-white font-semibold';
+        } else {
+          tab.className = 'px-3 py-1.5 rounded-lg bg-dark-700 text-gray-400 hover:text-white font-semibold';
+        }
+      });
+      renderVideos();
+    }
+
+    async function loadVideos() {
+      try {
+        const res = await fetch('/api/videos');
+        const data = await res.json();
+        currentVideos = data.videos || [];
+        
+        const ytCount = currentVideos.filter(v => Boolean(v.youtubeUrl)).length;
+        const draftCount = currentVideos.length - ytCount;
+
+        document.getElementById('countAll').innerText = currentVideos.length;
+        document.getElementById('countYT').innerText = ytCount;
+        document.getElementById('countDraft').innerText = draftCount;
+
+        renderVideos();
+        loadStats();
+      } catch (e) {
+        console.error('Videos error:', e);
+      }
+    }
+
+    function renderVideos() {
+      const grid = document.getElementById('videoGrid');
+      let filtered = currentVideos;
+      if (currentFilter === 'youtube') {
+        filtered = currentVideos.filter(v => Boolean(v.youtubeUrl));
+      } else if (currentFilter === 'draft') {
+        filtered = currentVideos.filter(v => !v.youtubeUrl);
+      }
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="p-10 text-center text-gray-500 col-span-2">
+            <i class="fa-solid fa-video-slash text-4xl mb-3 text-gray-600"></i>
+            <p class="text-sm font-medium">No videos found in this category.</p>
+            <p class="text-xs text-gray-600 mt-1">Click "Generate Short" to create your next viral Reel!</p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(v => {
+        const isYT = Boolean(v.youtubeUrl);
+        const encodedTitle = encodeURIComponent(v.title || 'Short');
+        const encodedHook = encodeURIComponent(v.hook || '');
+        const dateStr = v.createdAt ? new Date(v.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recent';
+
+        return `
+          <div class="p-4 rounded-xl bg-dark-800/80 border ${isYT ? 'border-red-500/20' : 'border-gray-800'} flex flex-col justify-between hover:border-pink-500/40 transition-all group shadow-sm">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-xs">
+                <span class="px-2 py-0.5 rounded-md bg-pink-500/10 text-pink-400 font-bold uppercase tracking-wider text-[10px]">${v.niche || 'Short'}</span>
+                
+                ${isYT ? `
+                  <span class="px-2 py-0.5 rounded-md bg-red-500/10 text-red-400 font-semibold text-[10px] flex items-center space-x-1">
+                    <i class="fa-brands fa-youtube"></i>
+                    <span>Live on YT</span>
+                  </span>
+                ` : `
+                  <span class="px-2 py-0.5 rounded-md bg-gray-700/60 text-gray-400 font-semibold text-[10px] flex items-center space-x-1">
+                    <i class="fa-solid fa-file"></i>
+                    <span>Local Draft</span>
+                  </span>
+                `}
+              </div>
+
+              <h4 class="font-bold text-white text-sm group-hover:text-pink-300 transition-colors line-clamp-2 leading-snug">${v.title || 'Untitled Short'}</h4>
+              <p class="text-xs text-gray-400 italic line-clamp-2">"${v.hook || 'High retention viral hook'}"</p>
+              <div class="text-[11px] text-gray-500">${dateStr}</div>
+            </div>
+
+            <div class="pt-3.5 flex items-center justify-between border-t border-gray-800/80 mt-3 gap-2">
+              <div class="flex items-center space-x-1.5">
+                ${v.videoUrl ? `
+                  <button onclick="playVideo('${v.videoUrl}', '${encodedTitle}', '${encodedHook}', '${v.youtubeUrl || ''}')" class="px-2.5 py-1.5 rounded-lg bg-pink-500/15 hover:bg-pink-500 text-pink-300 hover:text-white text-xs font-semibold flex items-center space-x-1 transition-all" title="Preview Video">
+                    <i class="fa-solid fa-play text-[10px]"></i>
+                    <span>Preview</span>
+                  </button>
+                ` : ''}
+
+                ${!isYT ? `
+                  <button onclick="publishDraft('${v.id}', '${encodedTitle}', '${encodedHook}', '${v.niche}', '${v.videoPath || ''}')" class="px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white text-xs font-bold flex items-center space-x-1 transition-all shadow-sm" title="Upload Draft to YouTube">
+                    <i class="fa-brands fa-youtube text-[11px]"></i>
+                    <span>Upload to YT</span>
+                  </button>
+                ` : `
+                  <a href="${v.youtubeUrl}" target="_blank" class="px-2.5 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-600 text-red-400 hover:text-white text-xs font-semibold flex items-center space-x-1 transition-all">
+                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                    <span>YouTube</span>
+                  </a>
+                `}
+              </div>
+
+              <button onclick="deleteVideo('${v.id}', '${v.videoPath || ''}')" class="p-1.5 text-gray-500 hover:text-red-400 text-xs transition-colors" title="Delete Short">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function publishDraft(id, title, hook, niche, videoPath) {
+      if (!confirm('🚀 Publish this draft to your YouTube Channel as a Short?')) return;
+
+      try {
+        const res = await fetch('/api/upload-draft', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id,
+            title: decodeURIComponent(title),
+            hook: decodeURIComponent(hook),
+            niche,
+            videoPath,
+          })
+        });
+
+        const data = await res.json();
+        if (data.success && data.youtubeUrl) {
+          alert('🎉 Upload Successful!\nLive URL: ' + data.youtubeUrl);
+          loadVideos();
+        } else {
+          alert('Upload error: ' + (data.error || 'Check YouTube API quota'));
+        }
+      } catch (err) {
+        alert('Network error: ' + err.message);
+      }
+    }
+
+    async function deleteVideo(id, videoPath) {
+      if (!confirm('Are you sure you want to delete this video record?')) return;
+
+      try {
+        await fetch('/api/delete-video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, videoPath })
+        });
+        loadVideos();
+      } catch (err) {
+        console.error('Delete error:', err);
+      }
+    }
+
+    async function triggerBatch(count) {
+      if (!confirm(`🚀 Launch automated batch generation for ${count} videos?`)) return;
+      try {
+        const res = await fetch('/api/trigger-batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ count })
+        });
+        alert(`Batch generation of ${count} videos started in background! Refresh in 1-2 minutes to see them.`);
+      } catch (err) {
+        alert('Batch error: ' + err.message);
+      }
+    }
+
+    async function triggerNewShort() {
+      const btn1 = document.getElementById('headerGenBtn');
+      const btn2 = document.getElementById('studioGenBtn');
+      const statusBox = document.getElementById('genStatus');
+      const statusText = document.getElementById('genStatusText');
+      const progressBar = document.getElementById('genProgressBar');
+
+      btn1.disabled = true;
+      btn2.disabled = true;
+      statusBox.classList.remove('hidden');
+      statusText.innerText = '🧠 Groq AI is crafting viral script & SEO tags...';
+      progressBar.style.width = '25%';
+
+      setTimeout(() => {
+        statusText.innerText = '🎙️ Synthesizing ultra-natural voiceover (Edge-TTS)...';
+        progressBar.style.width = '50%';
+      }, 4000);
+
+      setTimeout(() => {
+        statusText.innerText = '🎞️ Fetching cinematic stock & rendering 1080x1920 HD...';
+        progressBar.style.width = '75%';
+      }, 8000);
+
+      try {
+        const niche = document.getElementById('nicheSelect').value;
+        const voice = document.getElementById('voiceSelect').value;
+        const customTopic = document.getElementById('customTopicInput').value;
+
+        const res = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ niche, voice, customTopic })
+        });
+
+        const data = await res.json();
+        progressBar.style.width = '100%';
+        statusText.innerText = '✅ Short generated & published successfully!';
+
+        setTimeout(() => {
+          statusBox.classList.add('hidden');
+          btn1.disabled = false;
+          btn2.disabled = false;
+          loadVideos();
+        }, 2000);
+      } catch (e) {
+        statusText.innerText = '❌ Error generating short: ' + e.message;
+        btn1.disabled = false;
+        btn2.disabled = false;
+      }
+    }
+
+    function playVideo(url, title, hook, ytUrl) {
+      document.getElementById('modalVideo').src = url;
+      document.getElementById('modalTitle').innerText = decodeURIComponent(title);
+      document.getElementById('modalHook').innerText = '"' + decodeURIComponent(hook) + '"';
+      
+      const linksDiv = document.getElementById('modalLinks');
+      if (ytUrl) {
+        linksDiv.innerHTML = `<a href="${ytUrl}" target="_blank" class="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold flex items-center justify-center space-x-2 transition-colors"><i class="fa-brands fa-youtube text-sm"></i><span>Open Live on YouTube Shorts</span></a>`;
+      } else {
+        linksDiv.innerHTML = '';
+      }
+
+      document.getElementById('playerModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('modalVideo').pause();
+      document.getElementById('modalVideo').src = '';
+      document.getElementById('playerModal').classList.add('hidden');
+    }
+
+    window.onload = () => {
+      loadStats();
+      loadSettings();
+      loadVideos();
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+name: Auto Shorts & Reels 24/7 Factory
+
+on:
+  schedule:
+    # Runs twice every day (8:30 AM IST and 5:30 PM IST)
+    - cron: '0 3,12 * * *'
+  workflow_dispatch: # Allows 1-click manual generation from GitHub Web UI
+
+permissions:
+  contents: write
+
+concurrency:
+  group: auto-shorts-generator
+  cancel-in-progress: false
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Install Python & Node Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install edge-tts
+          npm install
+
+      - name: Generate & Publish Short Video
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          FIREBASE_DB_URL: ${{ secrets.FIREBASE_DB_URL }}
+          DEFAULT_NICHE: ${{ secrets.DEFAULT_NICHE || 'psychology' }}
+          DEFAULT_VOICE: ${{ secrets.DEFAULT_VOICE || 'hi-IN-MadhurNeural' }}
+          VIDEO_LANGUAGE: ${{ secrets.VIDEO_LANGUAGE || 'hindi' }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+        run: |
+          echo "🚀 Starting Autonomous Shorts & Reels Generation on GitHub Cloud..."
+          node index.js

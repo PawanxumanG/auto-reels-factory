@@ -1,0 +1,26 @@
+{
+  "name": "auto-reels-factory",
+  "version": "1.0.0",
+  "description": "Autonomous AI YouTube Shorts & Reels Factory powered by Groq, Edge-TTS, Pexels, and FFmpeg",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "generate": "node index.js",
+    "test-script": "node -e \"require('./src/script_generator').generateScript().then(console.log)\"",
+    "test-tts": "node -e \"require('./src/tts_engine').generateVoiceover('नमस्ते दोस्तों, क्या आप जानते हैं दिमाग की ये शक्ति?').then(console.log)\"",
+    "test-video": "node -e \"require('./src/video_fetcher').fetchBackgroundVideo('nature').then(console.log)\""
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.7",
+    "express": "^5.2.1",
+    "googleapis": "^144.0.0",
+    "node-cron": "^4.6.0",
+    "node-fetch": "^2.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "PawanxumanG",
+  "license": "MIT"
+}
