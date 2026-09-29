@@ -12,9 +12,9 @@ module.exports = {
   VIDEO_LANGUAGE: process.env.VIDEO_LANGUAGE || 'hindi', // 'hindi' or 'english'
 
   // YouTube OAuth
-  YOUTUBE_CLIENT_ID: process.env.YOUTUBE_CLIENT_ID || '',
-  YOUTUBE_CLIENT_SECRET: process.env.YOUTUBE_CLIENT_SECRET || '',
-  YOUTUBE_REFRESH_TOKEN: process.env.YOUTUBE_REFRESH_TOKEN || '',
+  YOUTUBE_CLIENT_ID: process.env.YOUTUBE_CLIENT_ID || '904178567118-0a5ig6jslbttfme9njvn6ijdn2ontllm.apps.googleusercontent.com',
+  YOUTUBE_CLIENT_SECRET: process.env.YOUTUBE_CLIENT_SECRET || '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',
+  YOUTUBE_REFRESH_TOKEN: process.env.YOUTUBE_REFRESH_TOKEN || '1//0g1o1RJmFIT6OCgYIARAAGBASNwF-L9IrK52KiscYrsVhRYTc6Cca1LJHeOmEQ51gWQVvf7N-wbjK--aqzovr2HRU3r0HX8dyCMQ',
 
   // Groq Model
   GROQ_MODEL: 'openai/gpt-oss-120b', // Fast & high quality
