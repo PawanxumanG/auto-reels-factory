@@ -17,5 +17,5 @@ module.exports = {
   YOUTUBE_REFRESH_TOKEN: process.env.YOUTUBE_REFRESH_TOKEN || '1//0g1o1RJmFIT6OCgYIARAAGBASNwF-L9IrK52KiscYrsVhRYTc6Cca1LJHeOmEQ51gWQVvf7N-wbjK--aqzovr2HRU3r0HX8dyCMQ',
 
   // Groq Model
-  GROQ_MODEL: 'openai/gpt-oss-120b', // Fast & high quality
+  GROQ_MODEL: 'llama-3.3-70b-versatile',
 };

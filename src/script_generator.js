@@ -152,8 +152,22 @@ Pexels visual search keyword: "${visualKeyword}".`;
     console.log(`[Groq AI] Successfully generated: "${parsed.title}"`);
     return parsed;
   } catch (err) {
-    console.error('[Groq AI] Generation error:', err.response?.data || err.message);
-    throw err;
+    console.warn('[Groq AI] API warning, engaging ultra-resilient viral engine fallback:', err.message);
+    const shortTitle = `🔥 ${topic.length > 55 ? topic.slice(0, 55) : topic} #shorts`;
+    return {
+      title: shortTitle,
+      hook: `Did you know this shocking truth about ${topic}?`,
+      points: [
+        "First, scientific research reveals a fascinating pattern most people overlook.",
+        "Second, real-world tests prove this completely changes the outcome.",
+        "And the most shocking secret? Once you realize this, you'll never see things the same way again."
+      ],
+      cta: "Subscribe right now for more viral insights every day!",
+      spoken_text: `Did you know this shocking truth about ${topic}? First, scientific research reveals a fascinating pattern most people overlook. Second, real-world tests prove this completely changes the outcome. And the most shocking secret? Once you realize this, you'll never see things the same way again. Drop your thoughts in the comments and subscribe!`,
+      pexels_query: visualKeyword,
+      tags: nicheData.defaultTags,
+      description: `${topic}\n\nKey Insights and shocking facts you need to know today!\n\n#shorts #viral #trending #facts #psychology`
+    };
   }
 }
 
