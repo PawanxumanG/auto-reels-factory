@@ -41,6 +41,14 @@ const ASSETS_DIR = process.env.VERCEL ? path.join('/tmp', 'assets') : path.join(
 app.use(express.static(PUBLIC_DIR));
 app.use('/assets', express.static(ASSETS_DIR));
 
+app.get('/', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+});
+
+app.get('/index.html', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+});
+
 // Active Cron Jobs List
 let activeCronTasks = [];
 
@@ -115,10 +123,6 @@ async function generateSingleShort(options = {}) {
       privacyStatus: options.privacyStatus || 'public',
     });
 
-    const dbRecord = await saveVideoRecord({
-      title: script.title,
-      hook: script.hook,
-      niche: targetNiche,
     return {
       success: true,
       isServerless: true,
