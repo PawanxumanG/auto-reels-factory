@@ -247,6 +247,12 @@ app.post('/api/auth/google-callback', async (req, res) => {
       success: true,
       channel: tokenData.channelInfo,
     });
+  } catch (err) {
+    console.error('[OAuth Callback Error]:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 2b. Direct Refresh Token Linking
 app.post('/api/auth/save-token', async (req, res) => {
   const { refreshToken, uid } = req.body;
