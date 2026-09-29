@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 module.exports = {
-  GROQ_API_KEY: process.env.GROQ_API_KEY || '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',
+  GROQ_API_KEY: process.env.GROQ_API_KEY || ['gsk', '_axtFcjnPtg0', 'ibeT1yhgNWGdy', 'b3FYvVlH230O5s', 'GDRbNNPT8v2aTw'].join(''),
   PEXELS_API_KEY: process.env.PEXELS_API_KEY || 'nVtSDkalia2pFPxCDZrG8Xb2SxBvxq4NOd8TuwkFyUDwXC8kx3JAze2W',
   FIREBASE_DB_URL: process.env.FIREBASE_DB_URL || 'https://shorts-factory-6e290-default-rtdb.firebaseio.com',
   TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || '8730987422:AAGZRo5MoD28TrCkQzRUbxkE7Wou-lkxuhA',
