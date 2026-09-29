@@ -36,7 +36,7 @@ const app = express();
 app.use(express.json());
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
-const ASSETS_DIR = path.join(__dirname, '..', 'assets');
+const ASSETS_DIR = process.env.VERCEL ? path.join('/tmp', 'assets') : path.join(__dirname, '..', 'assets');
 
 app.use(express.static(PUBLIC_DIR));
 app.use('/assets', express.static(ASSETS_DIR));
@@ -97,25 +97,10 @@ async function generateSingleShort(options = {}) {
   const targetVoice = options.voice || config.DEFAULT_VOICE;
   const userId = options.uid || options.userId || null;
 
-  const runId = Date.now();
-  if (!fs.existsSync(ASSETS_DIR)) fs.mkdirSync(ASSETS_DIR, { recursive: true });
-
-  const tempAudio = path.join(ASSETS_DIR, `audio_${runId}.mp3`);
-  const tempSub = path.join(ASSETS_DIR, `sub_${runId}.vtt`);
-  const tempBg = path.join(ASSETS_DIR, `bg_${runId}.mp4`);
-  const finalVideo = path.join(ASSETS_DIR, `Short_${runId}.mp4`);
-
   console.log(`[Auto Pipeline] Generating Short for niche: ${targetNiche} (User: ${userId || 'Default'})...`);
 
   // 1. Script
   const script = await generateScript(targetNiche, config.VIDEO_LANGUAGE, options.customTopic);
-
-  // Check if user has their own YouTube OAuth token
-  let userAuth = null;
-  if (userId) {
-    userAuth = await getUserYouTubeAuth(userId);
-  }
-  const activeRefreshToken = userAuth?.refreshToken || (userId === 'admin' ? config.YOUTUBE_REFRESH_TOKEN : null);
 
   // Check if running on serverless Lambda
   const isServerless = Boolean(process.env.VERCEL);
@@ -150,6 +135,23 @@ async function generateSingleShort(options = {}) {
       recordId: dbRecord.id,
     };
   }
+
+  const runId = Date.now();
+  try {
+    if (!fs.existsSync(ASSETS_DIR)) fs.mkdirSync(ASSETS_DIR, { recursive: true });
+  } catch (err) {}
+
+  const tempAudio = path.join(ASSETS_DIR, `audio_${runId}.mp3`);
+  const tempSub = path.join(ASSETS_DIR, `sub_${runId}.vtt`);
+  const tempBg = path.join(ASSETS_DIR, `bg_${runId}.mp4`);
+  const finalVideo = path.join(ASSETS_DIR, `Short_${runId}.mp4`);
+
+  // Check if user has their own YouTube OAuth token
+  let userAuth = null;
+  if (userId) {
+    userAuth = await getUserYouTubeAuth(userId);
+  }
+  const activeRefreshToken = userAuth?.refreshToken || (userId === 'admin' ? config.YOUTUBE_REFRESH_TOKEN : null);
 
   // 2. TTS
   await generateVoiceover(script.spoken_text, targetVoice, tempAudio, tempSub);
