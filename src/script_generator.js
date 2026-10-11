@@ -77,10 +77,95 @@ const NICHE_CONFIGS = {
     ],
     defaultTags: ['#shorts', '#motivation', '#discipline', '#stoicism', '#success', '#grind', '#mindset', '#quotes'],
   },
+  technology: {
+    name: 'Cutting-Edge AI & Future Tech',
+    topics: [
+      '3 Terrifying AI advancements happening right now in secret',
+      'How quantum computing will break all modern passwords overnight',
+      'Neural implants and the futuristic dawn of telepathy',
+      'Why humanoid robots are closer to replacing daily jobs than you think',
+      'The dark side of deepfake technology and identity theft',
+    ],
+    visualPool: [
+      'futuristic humanoid robot glowing eyes',
+      'cyberpunk neon matrix code dark room',
+      'microchip glowing circuits motherboard macro',
+      'server room blinking blue lights corridor',
+      'artificial intelligence neural network glowing nodes',
+    ],
+    defaultTags: ['#shorts', '#ai', '#technology', '#futuretech', '#artificialintelligence', '#cyberpunk', '#innovation', '#viral'],
+  },
+  wealth: {
+    name: 'Wealth Psychology & Money Rules',
+    topics: [
+      'The silent rule millionaires follow that middle class ignores',
+      'How the banking system secretly taxes your hard-earned savings',
+      '3 Unspoken money habits that keep 99% of people broke forever',
+      'Why buying liabilities disguised as assets is keeping you trapped',
+      'The compounding effect rule that turns small money into fortunes',
+    ],
+    visualPool: [
+      'luxury penthouse overlooking city night',
+      'gold bars vault dramatic lighting',
+      'stock market candles trading charts glowing',
+      'man counting money slow motion dark',
+      'modern luxury yacht open ocean sunrise',
+    ],
+    defaultTags: ['#shorts', '#money', '#wealth', '#investing', '#finance', '#millionairemindset', '#success', '#passiveincome'],
+  },
+  mythology: {
+    name: 'Epic Ancient Mythology & Legends',
+    topics: [
+      'The terrifying weapon of Lord Shiva that could destroy the universe',
+      'The cursed gem that brought down every king who possessed it',
+      '3 Ancient warrior codes that modern men completely forgot',
+      'The lost city of Atlantis vs Dwaraka: shocking parallels',
+      'The celestial gods who fought wars with high-tech vimanas',
+    ],
+    visualPool: [
+      'ancient stone temple misty golden rays',
+      'lightning storm over mystical mountain peak',
+      'ancient warrior holding sword battlefield sunset',
+      'mystic fire ritual temple night smoke',
+      'cosmic celestial energy swirling galaxy',
+    ],
+    defaultTags: ['#shorts', '#mythology', '#ancienthistory', '#legends', '#history', '#shiva', '#ancientmysteries', '#epic'],
+  },
+  horror: {
+    name: 'Real Paranormal & Unsolved Riddles',
+    topics: [
+      'The chilling audio recording that radio operators picked up in 1997',
+      'The forbidden island where anyone who sets foot disappears forever',
+      '3 Real life glitch in the matrix events caught on camera',
+      'The horrifying experiment of 1970 that doctors tried to erase',
+      'Why deep mines workers refuse to go past level 4 after dark',
+    ],
+    visualPool: [
+      'creepy abandoned hallway foggy flickering light',
+      'dark foggy forest silhouette branches moonlight',
+      'haunted vintage radio glowing dark room',
+      'mysterious shadow window rain storm',
+      'deep cave abyss darkness glowing dust',
+    ],
+    defaultTags: ['#shorts', '#horror', '#creepystories', '#scaryfacts', '#unsolvedmysteries', '#paranormal', '#dark', '#haunted'],
+  },
 };
 
 /**
- * Generate a viral, high-retention Short script using Groq AI
+ * Clean and parse JSON from LLM response (handling potential markdown code fences)
+ */
+function cleanAndParseJSON(rawContent) {
+  if (!rawContent || typeof rawContent !== 'string') return null;
+  let text = rawContent.trim();
+  // Strip ```json ... ``` or ``` ... ```
+  if (text.startsWith('```')) {
+    text = text.replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```$/, '').trim();
+  }
+  return JSON.parse(text);
+}
+
+/**
+ * Generate a viral, high-retention Short script using Groq AI with multi-model fallback
  * @param {string} niche
  * @param {string} language
  * @param {string} [customTopic]
@@ -100,7 +185,7 @@ VIRAL SCRIPT ARCHITECTURE:
 2. BODY (3-30s): 3 rapid-fire, high-value insights/facts delivered with punchy sentences.
 3. CTA (30-35s): A smooth call-to-action asking viewers to follow & comment.
 
-OUTPUT STRICTLY VALID JSON:
+OUTPUT STRICTLY VALID JSON ONLY:
 {
   "title": "Viral Click-Worthy Title with Emojis & #shorts (Max 70 chars)",
   "hook": "The opening 3-second hook sentence",
@@ -112,6 +197,12 @@ OUTPUT STRICTLY VALID JSON:
   "cta": "Engaging closing sentence",
   "spoken_text": "The complete natural voiceover script with natural punctuation and zero stage directions.",
   "pexels_query": "${visualKeyword}",
+  "visual_scenes": [
+    "Cinematic visual query for hook (e.g. dramatic dark silhouette rain)",
+    "Cinematic visual query for point 1",
+    "Cinematic visual query for point 2",
+    "Cinematic visual query for point 3"
+  ],
   "tags": ${JSON.stringify(nicheData.defaultTags)},
   "description": "2-sentence viral summary + timestamps + SEO keywords + hashtags"
 }
@@ -124,51 +215,75 @@ LANGUAGE REQUIREMENT:
 Ensure spoken_text is around 75 to 95 words (exactly 30-35 seconds read time).
 Pexels visual search keyword: "${visualKeyword}".`;
 
-  try {
-    const res = await axios.post(
-      'https://api.groq.com/openai/v1/chat/completions',
-      {
-        model: config.GROQ_MODEL,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.7,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${config.GROQ_API_KEY}`,
-          'Content-Type': 'application/json',
+  // Candidate models to attempt
+  const candidateModels = [
+    config.GROQ_MODEL,
+    ...(config.GROQ_FALLBACK_MODELS || [])
+  ].filter((v, i, a) => v && a.indexOf(v) === i);
+
+  for (const modelName of candidateModels) {
+    try {
+      console.log(`[Groq AI] Requesting script using model: ${modelName}...`);
+      const res = await axios.post(
+        'https://api.groq.com/openai/v1/chat/completions',
+        {
+          model: modelName,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.7,
         },
-        timeout: 15000,
+        {
+          headers: {
+            Authorization: `Bearer ${config.GROQ_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 18000,
+        }
+      );
+
+      const parsed = cleanAndParseJSON(res.data.choices[0].message.content);
+      if (parsed && parsed.title && parsed.spoken_text) {
+        if (!parsed.pexels_query) parsed.pexels_query = visualKeyword;
+        if (!parsed.visual_scenes || !Array.isArray(parsed.visual_scenes) || parsed.visual_scenes.length === 0) {
+          // Provide default scenes from visualPool
+          const pool = nicheData.visualPool;
+          parsed.visual_scenes = [
+            visualKeyword,
+            pool[(pool.indexOf(visualKeyword) + 1) % pool.length],
+            pool[(pool.indexOf(visualKeyword) + 2) % pool.length],
+            pool[(pool.indexOf(visualKeyword) + 3) % pool.length],
+          ];
+        }
+        if (!parsed.tags || parsed.tags.length === 0) parsed.tags = nicheData.defaultTags;
+        console.log(`[Groq AI] Successfully generated via ${modelName}: "${parsed.title}"`);
+        return parsed;
       }
-    );
-
-    const parsed = JSON.parse(res.data.choices[0].message.content);
-    if (!parsed.pexels_query) parsed.pexels_query = visualKeyword;
-    if (!parsed.tags || parsed.tags.length === 0) parsed.tags = nicheData.defaultTags;
-
-    console.log(`[Groq AI] Successfully generated: "${parsed.title}"`);
-    return parsed;
-  } catch (err) {
-    console.warn('[Groq AI] API warning, engaging ultra-resilient viral engine fallback:', err.message);
-    const shortTitle = `🔥 ${topic.length > 55 ? topic.slice(0, 55) : topic} #shorts`;
-    return {
-      title: shortTitle,
-      hook: `Did you know this shocking truth about ${topic}?`,
-      points: [
-        "First, scientific research reveals a fascinating pattern most people overlook.",
-        "Second, real-world tests prove this completely changes the outcome.",
-        "And the most shocking secret? Once you realize this, you'll never see things the same way again."
-      ],
-      cta: "Subscribe right now for more viral insights every day!",
-      spoken_text: `Did you know this shocking truth about ${topic}? First, scientific research reveals a fascinating pattern most people overlook. Second, real-world tests prove this completely changes the outcome. And the most shocking secret? Once you realize this, you'll never see things the same way again. Drop your thoughts in the comments and subscribe!`,
-      pexels_query: visualKeyword,
-      tags: nicheData.defaultTags,
-      description: `${topic}\n\nKey Insights and shocking facts you need to know today!\n\n#shorts #viral #trending #facts #psychology`
-    };
+    } catch (err) {
+      console.warn(`[Groq AI] Model ${modelName} failed (${err.response?.status || err.message}). Trying next...`);
+    }
   }
+
+  // Ultra-resilient viral engine fallback
+  console.warn('[Groq AI] All models failed, engaging ultra-resilient viral engine fallback.');
+  const shortTitle = `🔥 ${topic.length > 55 ? topic.slice(0, 55) : topic} #shorts`;
+  return {
+    title: shortTitle,
+    hook: `Did you know this shocking truth about ${topic}?`,
+    points: [
+      "First, scientific research reveals a fascinating pattern most people overlook.",
+      "Second, real-world tests prove this completely changes the outcome.",
+      "And the most shocking secret? Once you realize this, you'll never see things the same way again."
+    ],
+    cta: "Subscribe right now for more viral insights every day!",
+    spoken_text: `Did you know this shocking truth about ${topic}? First, scientific research reveals a fascinating pattern most people overlook. Second, real-world tests prove this completely changes the outcome. And the most shocking secret? Once you realize this, you'll never see things the same way again. Drop your thoughts in the comments and subscribe!`,
+    pexels_query: visualKeyword,
+    visual_scenes: nicheData.visualPool.slice(0, 4),
+    tags: nicheData.defaultTags,
+    description: `${topic}\n\nKey Insights and shocking facts you need to know today!\n\n#shorts #viral #trending #facts #psychology`
+  };
 }
 
 module.exports = {

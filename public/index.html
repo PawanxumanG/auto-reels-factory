@@ -428,8 +428,12 @@
           <select id="nicheSelect" class="w-full bg-dark-800 border border-gray-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors">
             <option value="psychology">🧠 Human Psychology & Dark Secrets</option>
             <option value="facts">🌌 Deep Space Mysteries & Terrifying Facts</option>
+            <option value="technology">🤖 Cutting-Edge AI & Future Tech</option>
+            <option value="wealth">💰 Wealth Psychology & Money Rules</option>
             <option value="cricket">🏏 Shocking Cricket Records & Legends</option>
             <option value="motivation">🦁 Stoic Motivation & The 1% Rule</option>
+            <option value="mythology">⚔️ Ancient Mythology & Epic Legends</option>
+            <option value="horror">👁️ Real Paranormal & Unsolved Riddles</option>
           </select>
         </div>
 
@@ -447,6 +451,24 @@
           <label class="block text-xs font-semibold text-gray-300 mb-1.5">Custom Topic / Prompt (Optional)</label>
           <input type="text" id="customTopicInput" placeholder="Enter custom topic prompt (optional)" class="w-full bg-dark-800 border border-gray-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-pink-500 transition-colors">
           <p class="text-[11px] text-gray-500 mt-1">Leave empty for Groq AI trending auto-generation.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1.5">Background Music (BGM)</label>
+            <select id="bgmSelect" class="w-full bg-dark-800 border border-gray-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-pink-500">
+              <option value="cinematic_suspense">🎻 Cinematic Suspense</option>
+              <option value="deep_mystery">🌌 Deep Mystery Drone</option>
+              <option value="stoic_motivation">🏆 Stoic Inspiration</option>
+              <option value="none">🔇 None (Voice Only)</option>
+            </select>
+          </div>
+          <div class="flex items-center pt-5">
+            <label class="flex items-center space-x-2 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" id="multiSceneToggle" checked class="accent-pink-500 rounded">
+              <span>🎬 Multi-Scene B-Roll</span>
+            </label>
+          </div>
         </div>
 
         <div class="pt-2 flex flex-col gap-2.5">
@@ -607,8 +629,12 @@
           <select id="inputChannelNiche" class="w-full bg-dark-800 border border-gray-700 rounded-xl p-2.5 text-white">
             <option value="psychology">🧠 Human Psychology & Dark Secrets</option>
             <option value="facts">🌌 Deep Space Mysteries & Terrifying Facts</option>
+            <option value="technology">🤖 Cutting-Edge AI & Future Tech</option>
+            <option value="wealth">💰 Wealth Psychology & Money Rules</option>
             <option value="cricket">🏏 Shocking Cricket Records & Legends</option>
             <option value="motivation">🦁 Stoic Motivation & The 1% Rule</option>
+            <option value="mythology">⚔️ Ancient Mythology & Epic Legends</option>
+            <option value="horror">👁️ Real Paranormal & Unsolved Riddles</option>
           </select>
         </div>
 
@@ -723,25 +749,71 @@
             <i class="fa-solid fa-shuffle"></i>
             <span>Active Niche Rotation</span>
           </h4>
-          <div class="grid grid-cols-2 gap-2">
+          <div class="grid grid-cols-2 gap-2 text-xs">
             <label class="flex items-center space-x-2 p-2.5 rounded-lg bg-dark-800 border border-gray-700 cursor-pointer">
               <input type="checkbox" value="psychology" class="niche-check accent-pink-500">
-              <span class="text-gray-200">🧠 Psychology & Dark Secrets</span>
+              <span class="text-gray-200">🧠 Psychology</span>
             </label>
             <label class="flex items-center space-x-2 p-2.5 rounded-lg bg-dark-800 border border-gray-700 cursor-pointer">
               <input type="checkbox" value="facts" class="niche-check accent-pink-500">
-              <span class="text-gray-200">🌌 Space & Terrifying Facts</span>
+              <span class="text-gray-200">🌌 Space & Facts</span>
+            </label>
+            <label class="flex items-center space-x-2 p-2.5 rounded-lg bg-dark-800 border border-gray-700 cursor-pointer">
+              <input type="checkbox" value="technology" class="niche-check accent-pink-500">
+              <span class="text-gray-200">🤖 AI & Future Tech</span>
+            </label>
+            <label class="flex items-center space-x-2 p-2.5 rounded-lg bg-dark-800 border border-gray-700 cursor-pointer">
+              <input type="checkbox" value="wealth" class="niche-check accent-pink-500">
+              <span class="text-gray-200">💰 Wealth & Money</span>
             </label>
             <label class="flex items-center space-x-2 p-2.5 rounded-lg bg-dark-800 border border-gray-700 cursor-pointer">
               <input type="checkbox" value="cricket" class="niche-check accent-pink-500">
-              <span class="text-gray-200">🏏 Cricket Records & Legends</span>
+              <span class="text-gray-200">🏏 Cricket Records</span>
             </label>
             <label class="flex items-center space-x-2 p-2.5 rounded-lg bg-dark-800 border border-gray-700 cursor-pointer">
               <input type="checkbox" value="motivation" class="niche-check accent-pink-500">
-              <span class="text-gray-200">🦁 Stoic Motivation & 1% Rule</span>
+              <span class="text-gray-200">🦁 Stoic Motivation</span>
+            </label>
+            <label class="flex items-center space-x-2 p-2.5 rounded-lg bg-dark-800 border border-gray-700 cursor-pointer">
+              <input type="checkbox" value="mythology" class="niche-check accent-pink-500">
+              <span class="text-gray-200">⚔️ Epic Mythology</span>
+            </label>
+            <label class="flex items-center space-x-2 p-2.5 rounded-lg bg-dark-800 border border-gray-700 cursor-pointer">
+              <input type="checkbox" value="horror" class="niche-check accent-pink-500">
+              <span class="text-gray-200">👁️ Real Paranormal</span>
             </label>
           </div>
         </div>
+
+        <!-- 3b. Production & Notification Settings -->
+        <div class="space-y-3 border-t border-gray-800 pt-4">
+          <h4 class="font-bold text-pink-400 text-sm flex items-center space-x-2">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span>Video Production & Alerts</span>
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-300 mb-1">Default BGM</label>
+              <select id="cfgBgm" class="w-full bg-dark-800 border border-gray-700 rounded-xl p-2.5 text-xs text-white">
+                <option value="cinematic_suspense">🎻 Cinematic Suspense</option>
+                <option value="deep_mystery">🌌 Deep Mystery Drone</option>
+                <option value="stoic_motivation">🏆 Stoic Inspiration</option>
+                <option value="none">🔇 None (Voice Only)</option>
+              </select>
+            </div>
+            <div class="flex items-center pt-5">
+              <label class="flex items-center space-x-2 text-xs text-gray-300 cursor-pointer">
+                <input type="checkbox" id="cfgMultiScene" checked class="accent-pink-500 rounded">
+                <span>Multi-Scene Dynamic Cuts</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <button type="button" onclick="testTelegramAlert()" class="px-3 py-1.5 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 text-xs font-semibold flex items-center space-x-2 transition-colors">
+              <i class="fa-brands fa-telegram"></i>
+              <span>Test Telegram Alerts Connection</span>
+            </button>
+          </div>
 
         <!-- 4. SEO & Engagement Settings -->
         <div class="space-y-3 border-t border-gray-800 pt-4">
@@ -1239,6 +1311,13 @@
           cb.checked = niches.includes(cb.value);
         });
 
+        if (document.getElementById('cfgBgm')) {
+          document.getElementById('cfgBgm').value = currentSettings.bgm || 'cinematic_suspense';
+        }
+        if (document.getElementById('cfgMultiScene')) {
+          document.getElementById('cfgMultiScene').checked = currentSettings.enableMultiScene !== false;
+        }
+
         document.getElementById('statPublishMode').innerHTML = `
           <span>${currentSettings.autoPublish !== false ? 'Auto-Public' : 'Save as Draft'}</span>
           <i class="fa-solid fa-circle-check text-xs"></i>
@@ -1273,6 +1352,8 @@
       const customTags = document.getElementById('cfgCustomTags').value;
 
       const checkedNiches = Array.from(document.querySelectorAll('.niche-check:checked')).map(cb => cb.value);
+      const bgm = document.getElementById('cfgBgm') ? document.getElementById('cfgBgm').value : 'cinematic_suspense';
+      const enableMultiScene = document.getElementById('cfgMultiScene') ? document.getElementById('cfgMultiScene').checked : true;
 
       const payload = {
         uid: currentUser ? currentUser.uid : null,
@@ -1282,6 +1363,8 @@
         autoPublish,
         pinnedComment,
         customTags,
+        bgm,
+        enableMultiScene,
         nicheRotation: checkedNiches.length > 0 ? checkedNiches : ['psychology', 'facts'],
       };
 
@@ -1536,6 +1619,8 @@
         const niche = document.getElementById('nicheSelect').value;
         const voice = document.getElementById('voiceSelect').value;
         const customTopic = document.getElementById('customTopicInput').value;
+        const bgm = document.getElementById('bgmSelect') ? document.getElementById('bgmSelect').value : 'cinematic_suspense';
+        const enableMultiScene = document.getElementById('multiSceneToggle') ? document.getElementById('multiSceneToggle').checked : true;
 
         const res = await fetch('/api/generate', {
           method: 'POST',
@@ -1544,6 +1629,8 @@
             niche,
             voice,
             customTopic,
+            bgm,
+            enableMultiScene,
             uid: currentUser ? currentUser.uid : null,
           })
         });
@@ -1646,6 +1733,21 @@
       document.getElementById('modalVideo').pause();
       document.getElementById('modalVideo').src = '';
       document.getElementById('playerModal').classList.add('hidden');
+    }
+
+    async function testTelegramAlert() {
+      try {
+        showToast('Sending test alert to Telegram...', 'info');
+        const res = await fetch('/api/test-telegram', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast('✅ Telegram connection verified! Check your Telegram app.', 'success', 5000);
+        } else {
+          showToast('❌ Telegram error: ' + (data.error || 'Failed'), 'error', 5000);
+        }
+      } catch (err) {
+        showToast('❌ Telegram alert failed: ' + err.message, 'error', 5000);
+      }
     }
 
     window.onload = () => {

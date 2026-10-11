@@ -4,10 +4,11 @@ const fs = require('fs');
 const axios = require('axios');
 const cron = require('node-cron');
 const config = require('./config');
-const { generateScript } = require('./script_generator');
+const { generateScript, NICHE_CONFIGS } = require('./script_generator');
 const { generateVoiceover } = require('./tts_engine');
-const { fetchBackgroundVideo } = require('./video_fetcher');
+const { fetchBackgroundVideo, fetchMultiSceneVideos } = require('./video_fetcher');
 const { renderShortVideo } = require('./video_renderer');
+const { sendToTelegram } = require('./telegram_sender');
 const {
   uploadToYouTube,
   getChannelInfo,
@@ -161,11 +162,26 @@ async function generateSingleShort(options = {}) {
   // 2. TTS
   await generateVoiceover(script.spoken_text, targetVoice, tempAudio, tempSub);
 
-  // 3. Stock Background
-  await fetchBackgroundVideo(script.pexels_query || 'abstract', tempBg);
+  // 3. Stock Background (Multi-scene or single)
+  let bgAssets = [];
+  let tempSceneFiles = [];
+  const enableMultiScene = options.enableMultiScene !== false && config.ENABLE_MULTI_SCENE;
+  if (enableMultiScene && script.visual_scenes && script.visual_scenes.length > 0) {
+    console.log(`[Auto Pipeline] Engaging dynamic multi-scene b-roll (${script.visual_scenes.length} scene queries)...`);
+    const scenes = await fetchMultiSceneVideos(script.visual_scenes, ASSETS_DIR, 3);
+    tempSceneFiles = scenes.map(s => s.videoPath);
+    bgAssets = tempSceneFiles;
+  } else {
+    await fetchBackgroundVideo(script.pexels_query || 'abstract', tempBg);
+    bgAssets = [tempBg];
+  }
 
-  // 4. FFmpeg Render
-  await renderShortVideo(tempBg, tempAudio, tempSub, finalVideo);
+  // 4. FFmpeg Render (with BGM and Subtitles)
+  await renderShortVideo(bgAssets, tempAudio, tempSub, finalVideo, {
+    enableBgm: options.enableBgm !== false && config.ENABLE_BGM,
+    bgm: options.bgm || config.DEFAULT_BGM,
+    bgmVolume: typeof options.bgmVolume === 'number' ? options.bgmVolume : config.BGM_VOLUME,
+  });
 
   // 5. YouTube Upload (if authorized)
   let youtubeResult = null;
@@ -176,6 +192,15 @@ async function generateSingleShort(options = {}) {
       pinnedComment: options.pinnedComment,
       customTags: options.customTags,
     });
+  }
+
+  // 5b. Telegram Notification Delivery
+  if (config.ENABLE_TELEGRAM && config.TELEGRAM_BOT_TOKEN) {
+    try {
+      await sendToTelegram(finalVideo, script, youtubeResult?.videoUrl);
+    } catch (tgErr) {
+      console.warn('[Telegram Delivery Notice]:', tgErr.message);
+    }
   }
 
   // 6. Save Record in Database
@@ -190,7 +215,7 @@ async function generateSingleShort(options = {}) {
   }, userId);
 
   // Clean temp
-  [tempAudio, tempSub, tempBg, tempSub.replace(/\.vtt$/, '.srt')].forEach((f) => {
+  [tempAudio, tempSub, tempBg, tempSub.replace(/\.vtt$/, '.srt'), ...tempSceneFiles].forEach((f) => {
     if (fs.existsSync(f)) {
       try { fs.unlinkSync(f); } catch {}
     }
@@ -546,6 +571,50 @@ app.get('/api/job-status', async (req, res) => {
   if (!jobId) return res.status(400).json({ error: 'Missing jobId' });
   const status = await getJobStatus(jobId);
   res.json({ success: true, job: status });
+});
+
+// 14. Available Niches endpoint
+app.get('/api/niches', (req, res) => {
+  res.json({
+    niches: Object.keys(NICHE_CONFIGS).map((k) => ({
+      id: k,
+      name: NICHE_CONFIGS[k].name,
+      sampleTopics: NICHE_CONFIGS[k].topics,
+      defaultTags: NICHE_CONFIGS[k].defaultTags,
+    })),
+  });
+});
+
+// 15. Available BGM tracks endpoint
+app.get('/api/bgm-tracks', (req, res) => {
+  res.json({
+    tracks: [
+      { id: 'cinematic_suspense', name: 'Cinematic Suspense (Dark Ambient)' },
+      { id: 'deep_mystery', name: 'Deep Mystery (Sub Drone)' },
+      { id: 'stoic_motivation', name: 'Stoic Inspiration (Inspiring)' },
+      { id: 'none', name: 'None (Voice Only)' },
+    ],
+  });
+});
+
+// 16. Test Telegram Alert endpoint
+app.post('/api/test-telegram', async (req, res) => {
+  try {
+    if (!config.TELEGRAM_BOT_TOKEN || !config.TELEGRAM_CHAT_ID) {
+      return res.status(400).json({ error: 'Telegram credentials not configured.' });
+    }
+    await axios.post(
+      `https://api.telegram.org/bot${config.TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        chat_id: config.TELEGRAM_CHAT_ID,
+        text: '🔔 <b>YouShorts AI Studio:</b> Telegram alerts connection is verified and active!',
+        parse_mode: 'HTML',
+      }
+    );
+    res.json({ success: true, message: 'Telegram alert sent successfully!' });
+  } catch (err) {
+    res.status(500).json({ error: err.response?.data?.description || err.message });
+  }
 });
 
 let isWorkerBusy = false;

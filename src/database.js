@@ -120,12 +120,15 @@ async function getRecentTopics(userId = null) {
 const DEFAULT_SETTINGS = {
   dailyUploadCount: 2,
   timeSlots: ['08:30', '17:30'],
-  nicheRotation: ['psychology', 'facts', 'cricket', 'motivation'],
+  nicheRotation: ['psychology', 'facts', 'technology', 'wealth', 'motivation'],
   voice: 'hi-IN-MadhurNeural',
   privacyStatus: 'public',
   autoPublish: true,
   pinnedComment: '👇 Which fact surprised you most? Drop your thoughts in the comments!',
   customTags: '#shorts #viral #trending #shortsfeed #facts #psychology',
+  enableMultiScene: true,
+  bgm: 'cinematic_suspense',
+  bgmVolume: 0.15,
 };
 
 async function getSettings(userId = null) {

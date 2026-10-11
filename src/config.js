@@ -17,5 +17,13 @@ module.exports = {
   YOUTUBE_REFRESH_TOKEN: process.env.YOUTUBE_REFRESH_TOKEN || '1//0g1o1RJmFIT6OCgYIARAAGBASNwF-L9IrK52KiscYrsVhRYTc6Cca1LJHeOmEQ51gWQVvf7N-wbjK--aqzovr2HRU3r0HX8dyCMQ',
 
   // Groq Model
-  GROQ_MODEL: 'llama-3.3-70b-versatile',
+  GROQ_MODEL: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+  GROQ_FALLBACK_MODELS: ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b', 'llama-3.3-70b-versatile'],
+
+  // Video & Audio Enhancements
+  ENABLE_MULTI_SCENE: process.env.ENABLE_MULTI_SCENE !== 'false',
+  ENABLE_BGM: process.env.ENABLE_BGM !== 'false',
+  DEFAULT_BGM: process.env.DEFAULT_BGM || 'cinematic_suspense',
+  BGM_VOLUME: parseFloat(process.env.BGM_VOLUME || '0.15'),
+  ENABLE_TELEGRAM: process.env.ENABLE_TELEGRAM !== 'false',
 };

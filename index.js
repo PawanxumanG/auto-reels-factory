@@ -4,9 +4,10 @@ const path = require('path');
 const config = require('./src/config');
 const { generateScript } = require('./src/script_generator');
 const { generateVoiceover } = require('./src/tts_engine');
-const { fetchBackgroundVideo } = require('./src/video_fetcher');
+const { fetchBackgroundVideo, fetchMultiSceneVideos } = require('./src/video_fetcher');
 const { renderShortVideo } = require('./src/video_renderer');
 const { uploadToYouTube } = require('./src/youtube_uploader');
+const { sendToTelegram } = require('./src/telegram_sender');
 const { saveVideoRecord } = require('./src/database');
 
 async function runPipeline() {
@@ -16,6 +17,8 @@ async function runPipeline() {
   console.log(`⚡ Groq AI Model: ${config.GROQ_MODEL}`);
   console.log(`🌐 Niche: ${config.DEFAULT_NICHE}`);
   console.log(`🗣️ Voice: ${config.DEFAULT_VOICE}`);
+  console.log(`🎵 Background Music: ${config.ENABLE_BGM ? config.DEFAULT_BGM : 'Disabled'}`);
+  console.log(`🎥 Dynamic Multi-Scene: ${config.ENABLE_MULTI_SCENE ? 'Enabled (3-4 B-Roll cuts)' : 'Single Clip'}`);
   console.log('------------------------------------------------------------');
 
   const runId = Date.now();
@@ -26,6 +29,7 @@ async function runPipeline() {
   const tempSub = path.join(assetsDir, `sub_${runId}.vtt`);
   const tempBg = path.join(assetsDir, `bg_${runId}.mp4`);
   const finalVideo = path.join(assetsDir, `Short_${runId}.mp4`);
+  let sceneClips = [];
 
   try {
     // 1. Generate Script via Groq AI
@@ -38,19 +42,42 @@ async function runPipeline() {
     console.log('[Step 2/5] Synthesizing voiceover with Edge-TTS...');
     await generateVoiceover(script.spoken_text, config.DEFAULT_VOICE, tempAudio, tempSub);
 
-    // 3. Fetch HD Vertical Video from Pexels
-    console.log('[Step 3/5] Fetching background video from Pexels...');
-    await fetchBackgroundVideo(script.pexels_query || 'nature', tempBg);
+    // 3. Fetch HD Vertical Video from Pexels (Multi-scene or single)
+    console.log('[Step 3/5] Fetching cinematic vertical footage from Pexels...');
+    let bgVideoInputs = [];
+    if (config.ENABLE_MULTI_SCENE && script.visual_scenes && script.visual_scenes.length > 0) {
+      console.log('🎬 Engaging Multi-Scene B-Roll montage generator...');
+      const multiClips = await fetchMultiSceneVideos(script.visual_scenes, assetsDir, 3);
+      sceneClips = multiClips.map((c) => c.videoPath);
+      bgVideoInputs = sceneClips;
+    } else {
+      await fetchBackgroundVideo(script.pexels_query || 'dark moody nature', tempBg);
+      bgVideoInputs = [tempBg];
+    }
 
-    // 4. Render Final 1080x1920 Short via FFmpeg
-    console.log('[Step 4/5] Rendering final video with FFmpeg...');
-    await renderShortVideo(tempBg, tempAudio, tempSub, finalVideo);
+    // 4. Render Final 1080x1920 Short via FFmpeg (with BGM and Subtitles)
+    console.log('[Step 4/5] Rendering final high-retention video with FFmpeg...');
+    await renderShortVideo(bgVideoInputs, tempAudio, tempSub, finalVideo, {
+      enableBgm: config.ENABLE_BGM,
+      bgm: config.DEFAULT_BGM,
+      bgmVolume: config.BGM_VOLUME,
+    });
 
     // 5. Upload to YouTube (if credentials present)
     console.log('[Step 5/5] Publishing and delivering video...');
     let youtubeResult = null;
     if (config.YOUTUBE_CLIENT_ID && config.YOUTUBE_REFRESH_TOKEN) {
       youtubeResult = await uploadToYouTube(finalVideo, script);
+    }
+
+    // 5b. Telegram Delivery
+    if (config.ENABLE_TELEGRAM && config.TELEGRAM_BOT_TOKEN) {
+      try {
+        console.log('📱 Sending video directly to Telegram channel/bot...');
+        await sendToTelegram(finalVideo, script, youtubeResult?.videoUrl);
+      } catch (tgErr) {
+        console.warn('[Telegram] Delivery notice:', tgErr.message);
+      }
     }
 
     // 6. Save Record in Firebase RTDB
@@ -72,7 +99,7 @@ async function runPipeline() {
     console.log('============================================================');
 
     // Clean up temp intermediate files
-    [tempAudio, tempSub, tempBg, tempSub.replace(/\.vtt$/, '.srt')].forEach((f) => {
+    [tempAudio, tempSub, tempBg, tempSub.replace(/\.vtt$/, '.srt'), ...sceneClips].forEach((f) => {
       if (fs.existsSync(f)) {
         try {
           fs.unlinkSync(f);
