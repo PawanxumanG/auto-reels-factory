@@ -8,17 +8,24 @@ const { fetchBackgroundVideo, fetchMultiSceneVideos } = require('./src/video_fet
 const { renderShortVideo } = require('./src/video_renderer');
 const { uploadToYouTube } = require('./src/youtube_uploader');
 const { sendToTelegram } = require('./src/telegram_sender');
-const { saveVideoRecord } = require('./src/database');
+const { saveVideoRecord, getSettings } = require('./src/database');
 
 async function runPipeline() {
+  const settings = await getSettings();
+  const niches = settings.nicheRotation || ['psychology', 'facts', 'technology', 'wealth', 'motivation'];
+  const activeNiche = niches[Math.floor(Math.random() * niches.length)] || config.DEFAULT_NICHE;
+  const activeVoice = settings.voice || config.DEFAULT_VOICE;
+  const activeBgm = settings.bgm || config.DEFAULT_BGM;
+  const enableMultiScene = settings.enableMultiScene !== false && config.ENABLE_MULTI_SCENE;
+
   console.log('============================================================');
   console.log('🎬 AUTO REELS & YOUTUBE SHORTS FACTORY - PIPELINE STARTED');
   console.log('============================================================');
   console.log(`⚡ Groq AI Model: ${config.GROQ_MODEL}`);
-  console.log(`🌐 Niche: ${config.DEFAULT_NICHE}`);
-  console.log(`🗣️ Voice: ${config.DEFAULT_VOICE}`);
-  console.log(`🎵 Background Music: ${config.ENABLE_BGM ? config.DEFAULT_BGM : 'Disabled'}`);
-  console.log(`🎥 Dynamic Multi-Scene: ${config.ENABLE_MULTI_SCENE ? 'Enabled (3-4 B-Roll cuts)' : 'Single Clip'}`);
+  console.log(`🌐 Niche: ${activeNiche}`);
+  console.log(`🗣️ Voice: ${activeVoice}`);
+  console.log(`🎵 Background Music: ${config.ENABLE_BGM ? activeBgm : 'Disabled'}`);
+  console.log(`🎥 Dynamic Multi-Scene: ${enableMultiScene ? 'Enabled (3-4 B-Roll cuts)' : 'Single Clip'}`);
   console.log('------------------------------------------------------------');
 
   const runId = Date.now();
@@ -34,13 +41,13 @@ async function runPipeline() {
   try {
     // 1. Generate Script via Groq AI
     console.log('\n[Step 1/5] Generating viral script with Groq AI...');
-    const script = await generateScript(config.DEFAULT_NICHE, config.VIDEO_LANGUAGE);
+    const script = await generateScript(activeNiche, config.VIDEO_LANGUAGE);
     console.log(`\n📌 Script Hook: "${script.hook}"`);
     console.log(`📝 Full Text: "${script.spoken_text}"\n`);
 
     // 2. Generate Voiceover & Subtitles via Edge-TTS
     console.log('[Step 2/5] Synthesizing voiceover with Edge-TTS...');
-    await generateVoiceover(script.spoken_text, config.DEFAULT_VOICE, tempAudio, tempSub);
+    await generateVoiceover(script.spoken_text, activeVoice, tempAudio, tempSub);
 
     // 3. Fetch HD Vertical Video from Pexels (Multi-scene or single)
     console.log('[Step 3/5] Fetching cinematic vertical footage from Pexels...');

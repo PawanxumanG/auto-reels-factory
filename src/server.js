@@ -60,17 +60,21 @@ app.get('/index.html', (req, res) => {
 
 // Active Cron Jobs List
 let activeCronTasks = [];
+let activeScheduleUser = null;
 
 /**
  * Re-arm the local auto-posting cron scheduler based on user settings
  */
-async function syncScheduler() {
+async function syncScheduler(userId = null) {
   activeCronTasks.forEach(task => task.stop());
   activeCronTasks = [];
 
-  const settings = await getSettings();
+  const targetUid = userId || activeScheduleUser || null;
+  if (userId) activeScheduleUser = userId;
+
+  const settings = await getSettings(targetUid);
   const timeSlots = settings.timeSlots || ['08:30', '17:30'];
-  console.log(`[Scheduler] Initializing automation for ${timeSlots.length} daily time slots:`, timeSlots);
+  console.log(`[Scheduler] Initializing automation for ${timeSlots.length} daily time slots (User: ${targetUid || 'Default'}):`, timeSlots);
 
   timeSlots.forEach((slot, index) => {
     const parts = slot.trim().split(':');
@@ -84,8 +88,8 @@ async function syncScheduler() {
         const task = cron.schedule(cronPattern, async () => {
           console.log(`\n⏰ [Cron Triggered] Starting automated Short generation for slot: ${slot}...`);
           try {
-            const currentSettings = await getSettings();
-            const niches = currentSettings.nicheRotation || ['psychology', 'facts', 'cricket', 'motivation'];
+            const currentSettings = await getSettings(targetUid);
+            const niches = currentSettings.nicheRotation || ['psychology', 'facts', 'technology', 'wealth', 'motivation'];
             const chosenNiche = niches[Math.floor(Math.random() * niches.length)];
             await generateSingleShort({
               niche: chosenNiche,
@@ -94,6 +98,9 @@ async function syncScheduler() {
               autoPublish: currentSettings.autoPublish !== false,
               pinnedComment: currentSettings.pinnedComment,
               customTags: currentSettings.customTags,
+              bgm: currentSettings.bgm || config.DEFAULT_BGM,
+              enableMultiScene: currentSettings.enableMultiScene !== false,
+              uid: targetUid,
             });
           } catch (cronErr) {
             console.error('[Scheduler Execution Error]:', cronErr.message);
@@ -119,8 +126,8 @@ async function generateSingleShort(options = {}) {
   // 1. Script
   const script = await generateScript(targetNiche, config.VIDEO_LANGUAGE, options.customTopic);
 
-  // Check if running on serverless Lambda
-  const isServerless = Boolean(process.env.VERCEL);
+  // Check if running on serverless Lambda (unless processed by worker)
+  const isServerless = Boolean(process.env.VERCEL) && !options.isWorkerExecution;
   if (isServerless) {
     const jobRes = await createJob({
       uid: userId,
@@ -130,6 +137,8 @@ async function generateSingleShort(options = {}) {
       title: script.title,
       hook: script.hook,
       privacyStatus: options.privacyStatus || 'public',
+      bgm: options.bgm || config.DEFAULT_BGM,
+      enableMultiScene: options.enableMultiScene !== false,
     });
 
     return {
@@ -433,7 +442,7 @@ app.post('/api/settings', async (req, res) => {
   const userId = req.body.uid || null;
   try {
     const result = await saveSettings(req.body, userId);
-    if (!userId) await syncScheduler();
+    await syncScheduler(userId);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -637,6 +646,9 @@ function startJobWorker() {
         customTopic: job.customTopic,
         uid: job.uid,
         privacyStatus: job.privacyStatus || 'public',
+        bgm: job.bgm,
+        enableMultiScene: job.enableMultiScene !== false,
+        isWorkerExecution: true,
       });
 
       await updateJobStatus(job.id, {

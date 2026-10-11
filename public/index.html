@@ -1355,6 +1355,8 @@
       const bgm = document.getElementById('cfgBgm') ? document.getElementById('cfgBgm').value : 'cinematic_suspense';
       const enableMultiScene = document.getElementById('cfgMultiScene') ? document.getElementById('cfgMultiScene').checked : true;
 
+      const voice = document.getElementById('voiceSelect') ? document.getElementById('voiceSelect').value : (currentSettings.voice || 'hi-IN-MadhurNeural');
+
       const payload = {
         uid: currentUser ? currentUser.uid : null,
         dailyUploadCount: dailyCount,
@@ -1365,6 +1367,7 @@
         customTags,
         bgm,
         enableMultiScene,
+        voice,
         nicheRotation: checkedNiches.length > 0 ? checkedNiches : ['psychology', 'facts'],
       };
 
@@ -1378,12 +1381,24 @@
         
         const msg = document.getElementById('saveStatusMsg');
         msg.classList.remove('hidden');
-        showToast('Settings saved successfully!', 'success');
+        showToast('Settings & schedule saved successfully!', 'success');
+
+        // Immediate UI reactive update for schedule cards
+        document.getElementById('statDailyCount').innerText = dailyCount + ' Videos / Day';
+        if (timeSlots.length > 0) {
+          document.getElementById('statTimeSlotsPreview').innerText = timeSlots.join(', ');
+        }
+        document.getElementById('statPublishMode').innerHTML = `
+          <span>${autoPublish ? 'Auto-Public' : 'Save as Draft'}</span>
+          <i class="fa-solid fa-circle-check text-xs"></i>
+        `;
+
         setTimeout(() => {
           msg.classList.add('hidden');
           closeSettingsModal();
           loadStats();
-        }, 1000);
+          loadSettings();
+        }, 800);
       } catch (err) {
         showToast('Error saving settings: ' + err.message, 'error');
       }
@@ -1391,7 +1406,10 @@
 
     function openSettingsModal() {
       loadSettings();
-      document.getElementById('settingsModal').classList.remove('hidden');
+      const modal = document.getElementById('settingsModal');
+      modal.classList.remove('hidden');
+      const scrollBody = modal.querySelector('.overflow-y-auto');
+      if (scrollBody) scrollBody.scrollTop = 0;
     }
 
     function closeSettingsModal() {
