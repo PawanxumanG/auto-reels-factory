@@ -141,6 +141,19 @@ async function generateSingleShort(options = {}) {
       enableMultiScene: options.enableMultiScene !== false,
     });
 
+    const ghToken = process.env.GITHUB_TOKEN || process.env.GH_PAT;
+    if (ghToken) {
+      axios.post('https://api.github.com/repos/PawanxumanG/auto-reels-factory/dispatches', {
+        event_type: 'generate_short',
+        client_payload: { jobId: jobRes.id }
+      }, {
+        headers: {
+          Authorization: `Bearer ${ghToken}`,
+          Accept: 'application/vnd.github.v3+json',
+        }
+      }).catch(err => console.warn('[GitHub Actions Dispatch Error]:', err.message));
+    }
+
     return {
       success: true,
       isServerless: true,

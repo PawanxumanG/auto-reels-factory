@@ -2,8 +2,10 @@ name: Auto Shorts & Reels 24/7 Factory
 
 on:
   schedule:
-    # Runs twice every day (8:30 AM IST and 5:30 PM IST)
+    # Runs on prime time slots (8:30 AM IST and 5:30 PM IST)
     - cron: '0 3,12 * * *'
+  repository_dispatch:
+    types: [generate_short]
   workflow_dispatch: # Allows 1-click manual generation from GitHub Web UI
 
 permissions:

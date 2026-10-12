@@ -252,6 +252,32 @@ async function getJobStatus(id) {
   }
 }
 
+async function getActiveYouTubeAuth(userId = null) {
+  if (userId && userId !== 'admin') {
+    const auth = await getUserYouTubeAuth(userId);
+    if (auth && auth.refreshToken) return { uid: userId, ...auth };
+  }
+
+  try {
+    const res = await axios.get(`${DB_BASE}/shorts_factory/users.json`);
+    if (res.data) {
+      const uids = Object.keys(res.data).reverse();
+      for (const uid of uids) {
+        const u = res.data[uid];
+        if (u && u.youtube_auth && u.youtube_auth.refreshToken) {
+          return { uid, ...u.youtube_auth };
+        }
+      }
+    }
+  } catch (err) {}
+
+  if (config.YOUTUBE_REFRESH_TOKEN) {
+    return { uid: 'admin', refreshToken: config.YOUTUBE_REFRESH_TOKEN };
+  }
+
+  return null;
+}
+
 module.exports = {
   saveVideoRecord,
   getVideos,
@@ -264,6 +290,7 @@ module.exports = {
   saveUserProfile,
   getUserYouTubeAuth,
   saveUserYouTubeAuth,
+  getActiveYouTubeAuth,
   createJob,
   getPendingJobs,
   updateJobStatus,
